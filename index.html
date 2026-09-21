@@ -504,8 +504,8 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_OGR39bNiTJ4JPk5JjvEW5g_mqDZZwYj';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Вкажіть сюди вашу власну TON адресу, куди надходитимуть кошти від продажу швидкості
-        const ADMIN_TON_WALLET = 'UQXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'; 
+        // Введена ваша реальна адреса гаманця
+        const ADMIN_TON_WALLET = 'UQDXq1iAqu88tVRG62_k03kAXELu_1gzRBMye-VZoFRIRtWw'; 
 
         let userId = 'user_leslav';
         let userName = 'Михайло 🐝';
@@ -572,24 +572,21 @@
             document.getElementById('speed-display').innerText = '+' + miningSpeed.toFixed(4) + '/с';
         }
 
-        // Функція покупки швидкості за реальні TON через TON Connect
         async function buyBoosterWithTON() {
-            // Перевіряємо, чи підключений гаманець
             if (!tonConnectUI.connected) {
                 alert('Будь ласка, спочатку підключіть ваш TON гаманець у профілі!');
                 switchView('profile', document.querySelectorAll('.nav-item')[4]);
                 return;
             }
 
-            // 0.01 TON в нанотелях (1 TON = 1,000,000,000 нанотонів, отже 0.01 TON = 10,000,000 нанотонів)
-            const nanoTonAmount = '10000000'; 
+            const nanoTonAmount = '10000000'; // 0.01 TON
 
             const transaction = {
-                validUntil: Math.floor(Date.now() / 1000) + 360, // транзакція дійсна 6 хвилин
+                validUntil: Math.floor(Date.now() / 1000) + 360,
                 messages: [
                     {
-                        address: ADMIN_TON_WALLET, // Куди надсилаються TON
-                        amount: nanoTonAmount        // Сума в нанотонах (0.01 TON)
+                        address: ADMIN_TON_WALLET,
+                        amount: nanoTonAmount
                     }
                 ]
             };
@@ -597,14 +594,11 @@
             try {
                 alert('Підтвердіть транзакцію на 0.01 TON у вашому гаманці...');
                 
-                // Надсилаємо транзакцію через гаманець користувача
                 const result = await tonConnectUI.sendTransaction(transaction);
                 
-                // Якщо транзакція пройшла успішно — збільшуємо швидкість
                 miningSpeed += 0.0001;
                 updateUI();
 
-                // Оновлюємо швидкість в Supabase
                 await supabaseClient
                     .from('users')
                     .update({ speed: miningSpeed })
