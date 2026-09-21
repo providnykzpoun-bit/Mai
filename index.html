@@ -20,6 +20,7 @@
             --text-main: #ffffff;
             --text-secondary: #8b8b93;
             --green-accent: #00ff88;
+            --ton-blue: #0098ea;
         }
 
         * {
@@ -326,9 +327,9 @@
         }
 
         .action-chip {
-            background: rgba(243, 186, 47, 0.15);
-            color: var(--gold-primary);
-            border: 1px solid rgba(243, 186, 47, 0.3);
+            background: rgba(0, 152, 234, 0.15);
+            color: var(--ton-blue);
+            border: 1px solid rgba(0, 152, 234, 0.4);
             padding: 6px 12px;
             border-radius: 10px;
             font-size: 12px;
@@ -338,7 +339,7 @@
         }
 
         .action-chip:active {
-            background: rgba(243, 186, 47, 0.3);
+            background: rgba(0, 152, 234, 0.3);
         }
 
         #ton-connect-button {
@@ -369,7 +370,7 @@
                 <div class="assets-title">Баланс активу</div>
                 <div class="assets-amount"><span id="total-assets">171.1932</span> UA</div>
                 <div class="wallet-breakdown">
-                    <div>Швидкість: <b style="color: var(--green-accent);">+0.0001/с</b></div>
+                    <div>Швидкість: <b id="speed-display" style="color: var(--green-accent);">+0.0001/с</b></div>
                     <div>Пул: <b id="pool-assets">171.1932 UA</b></div>
                 </div>
             </div>
@@ -399,14 +400,14 @@
                     <h4 style="font-size: 15px; margin-bottom: 3px;">Підписка на Telegram</h4>
                     <p>Отримайте бонус за активність</p>
                 </div>
-                <button class="action-chip" onclick="alert('Завдання перевірено!')">+5.0 UA</button>
+                <button class="action-chip" style="background: rgba(243, 186, 47, 0.15); color: var(--gold-primary); border-color: rgba(243, 186, 47, 0.3);" onclick="alert('Завдання перевірено!')">+5.0 UA</button>
             </div>
             <div class="placeholder-card">
                 <div>
                     <h4 style="font-size: 15px; margin-bottom: 3px;">Запросити друга</h4>
                     <p>Роздайте реферальне посилання</p>
                 </div>
-                <button class="action-chip" onclick="alert('Посилання скопійовано!')">+10.0 UA</button>
+                <button class="action-chip" style="background: rgba(243, 186, 47, 0.15); color: var(--gold-primary); border-color: rgba(243, 186, 47, 0.3);" onclick="alert('Посилання скопійовано!')">+10.0 UA</button>
             </div>
         </div>
 
@@ -416,11 +417,11 @@
             <div class="placeholder-card" style="flex-direction: column; align-items: flex-start; gap: 10px;">
                 <div>
                     <h4 style="font-size: 16px; margin-bottom: 4px;">Квантовий прискорювач ⚡</h4>
-                    <p>Збільшує генерацію монет на 50%</p>
+                    <p>Збільшує генерацію на +0.0001/с</p>
                 </div>
                 <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; margin-top: 5px;">
-                    <b>Ціна: 50.0 UA</b>
-                    <button class="action-chip" onclick="alert('Недостатньо коштів')">Купити</button>
+                    <b style="color: var(--ton-blue);">Ціна: 0.01 TON</b>
+                    <button class="action-chip" onclick="buyBoosterWithTON()">Купити за TON</button>
                 </div>
             </div>
         </div>
@@ -440,14 +441,26 @@
         <!-- VIEW 5: PROFILE -->
         <div id="view-profile" class="view-content">
             <div class="section-title">Профіль засновника</div>
+            
+            <!-- Картка швидкої покупки за TON -->
+            <div class="placeholder-card" style="flex-direction: column; align-items: flex-start; gap: 10px; width: 100%; margin-bottom: 15px; border-color: rgba(0, 152, 234, 0.3);">
+                <div>
+                    <h4 style="font-size: 15px; color: var(--ton-blue); margin-bottom: 3px;">⚡ Купити прискорювач за TON</h4>
+                    <p>Додати +0.0001/с до швидкості майнінгу</p>
+                </div>
+                <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                    <b style="font-size: 14px; color: var(--ton-blue);">0.01 TON</b>
+                    <button class="action-chip" style="padding: 8px 16px; font-size: 13px;" onclick="buyBoosterWithTON()">Купити зараз</button>
+                </div>
+            </div>
+
             <div class="placeholder-card" style="flex-direction: column; align-items: flex-start; gap: 8px; width: 100%;">
                 <p>Статус: <b style="color: var(--green-accent);">Активний засновник UA Token</b></p>
                 <p>ID у мережі: <b id="profile-id-text">tg_leslav</b></p>
                 <p>Статус гаманця: <b id="wallet-status-text" style="color: var(--text-secondary);">Не підключено</b></p>
                 
                 <div style="width: 100%; margin-top: 10px;">
-                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 6px;">Підключити TON Гаманець:</div>
-                    <!-- Кнопка TON Connect UI -->
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 6px;">Ваш TON Гаманець:</div>
                     <div id="ton-connect-button"></div>
                 </div>
             </div>
@@ -479,7 +492,6 @@
     </nav>
 
     <script>
-        // Ініціалізація TON Connect UI (маніфест підтягується з вашого GitHub Pages)
         const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
             manifestUrl: 'https://providnykzpoun-bit.github.io/Mai/tonconnect-manifest.json',
             buttonRootId: 'ton-connect-button'
@@ -491,6 +503,9 @@
         const SUPABASE_URL = 'https://zitfhobybklgmjpdcbvb.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_OGR39bNiTJ4JPk5JjvEW5g_mqDZZwYj';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Вкажіть сюди вашу власну TON адресу, куди надходитимуть кошти від продажу швидкості
+        const ADMIN_TON_WALLET = 'UQXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'; 
 
         let userId = 'user_leslav';
         let userName = 'Михайло 🐝';
@@ -512,45 +527,40 @@
 
         let totalAssets = 171.1932;
         let pendingGreen = 0.0000; 
-        const miningSpeed = 0.0001;
+        let miningSpeed = 0.0001;
 
         async function loadUserData() {
             const { data, error } = await supabaseClient
                 .from('users')
-                .select('balance, wallet')
+                .select('balance, wallet, speed')
                 .eq('id', userId)
                 .single();
 
             if (data) {
                 totalAssets = parseFloat(data.balance);
+                if (data.speed) {
+                    miningSpeed = parseFloat(data.speed);
+                }
                 updateUI();
                 if (data.wallet) {
                     document.getElementById('wallet-status-text').innerHTML = `<span style="color: var(--green-accent);">${data.wallet.slice(0, 4)}...${data.wallet.slice(-4)}</span>`;
                 }
             } else {
-                await supabaseClient.from('users').insert([{ id: userId, balance: totalAssets, name: userName }]);
+                await supabaseClient.from('users').insert([{ id: userId, balance: totalAssets, speed: miningSpeed, name: userName }]);
             }
         }
 
         loadUserData();
 
-        // Відстеження підключення TON гаманця через TON Connect
         tonConnectUI.onStatusChange(async wallet => {
             if (wallet) {
-                // Отримуємо адресу гаманця у зручному (User-Friendly) форматі
-                const rawAddress = wallet.account.address;
-                // Конвертуємо уfriendly формат (або використовуємо як є)
                 const userWallet = wallet.account.address; 
-                
                 document.getElementById('wallet-status-text').innerHTML = `<span style="color: var(--green-accent);">${userWallet.slice(0, 4)}...${userWallet.slice(-4)}</span>`;
                 
-                // Автоматично зберігаємо адресу в Supabase
                 await supabaseClient
                     .from('users')
                     .update({ wallet: userWallet })
                     .eq('id', userId);
-                
-                console.log("TON Гаманець успішно підключено і збережено:", userWallet);
             } else {
                 document.getElementById('wallet-status-text').innerHTML = `<span style="color: var(--text-secondary);">Не підключено</span>`;
             }
@@ -559,6 +569,53 @@
         function updateUI() {
             document.getElementById('total-assets').innerText = totalAssets.toFixed(4);
             document.getElementById('pool-assets').innerText = totalAssets.toFixed(4) + ' UA';
+            document.getElementById('speed-display').innerText = '+' + miningSpeed.toFixed(4) + '/с';
+        }
+
+        // Функція покупки швидкості за реальні TON через TON Connect
+        async function buyBoosterWithTON() {
+            // Перевіряємо, чи підключений гаманець
+            if (!tonConnectUI.connected) {
+                alert('Будь ласка, спочатку підключіть ваш TON гаманець у профілі!');
+                switchView('profile', document.querySelectorAll('.nav-item')[4]);
+                return;
+            }
+
+            // 0.01 TON в нанотелях (1 TON = 1,000,000,000 нанотонів, отже 0.01 TON = 10,000,000 нанотонів)
+            const nanoTonAmount = '10000000'; 
+
+            const transaction = {
+                validUntil: Math.floor(Date.now() / 1000) + 360, // транзакція дійсна 6 хвилин
+                messages: [
+                    {
+                        address: ADMIN_TON_WALLET, // Куди надсилаються TON
+                        amount: nanoTonAmount        // Сума в нанотонах (0.01 TON)
+                    }
+                ]
+            };
+
+            try {
+                alert('Підтвердіть транзакцію на 0.01 TON у вашому гаманці...');
+                
+                // Надсилаємо транзакцію через гаманець користувача
+                const result = await tonConnectUI.sendTransaction(transaction);
+                
+                // Якщо транзакція пройшла успішно — збільшуємо швидкість
+                miningSpeed += 0.0001;
+                updateUI();
+
+                // Оновлюємо швидкість в Supabase
+                await supabaseClient
+                    .from('users')
+                    .update({ speed: miningSpeed })
+                    .eq('id', userId);
+
+                alert('Успіх! Транзакцію прийнято, швидкість майнінгу збільшено 🚀');
+
+            } catch (e) {
+                console.error(e);
+                alert('Транзакцію скасовано або сталася помилка.');
+            }
         }
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
