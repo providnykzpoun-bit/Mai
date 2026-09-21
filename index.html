@@ -370,7 +370,7 @@
                 <div class="assets-title">Баланс активу</div>
                 <div class="assets-amount"><span id="total-assets">171.1932</span> UA</div>
                 <div class="wallet-breakdown">
-                    <div>Швидкість: <b id="speed-display" style="color: var(--green-accent);">+0.000000001/с</b></div>
+                    <div>Швидкість: <b id="speed-display" style="color: var(--green-accent);">+0.0001/с</b></div>
                     <div>Пул: <b id="pool-assets">171.1932 UA</b></div>
                 </div>
             </div>
@@ -417,7 +417,7 @@
             <div class="placeholder-card" style="flex-direction: column; align-items: flex-start; gap: 10px;">
                 <div>
                     <h4 style="font-size: 16px; margin-bottom: 4px;">Квантовий прискорювач ⚡</h4>
-                    <p>Збільшує генерацію на +0.0001/с (Курс: 0.01 TON = 5000 UA)</p>
+                    <p>Збільшує генерацію на +0.001/с (Курс: 0.01 TON = 5000 UA)</p>
                 </div>
                 <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; margin-top: 5px;">
                     <b style="color: var(--ton-blue);">Ціна: 0.01 TON</b>
@@ -442,7 +442,6 @@
         <div id="view-profile" class="view-content">
             <div class="section-title">Профіль та Вивід</div>
             
-            <!-- Картка виводу UA з комісією 10% -->
             <div class="placeholder-card" style="flex-direction: column; align-items: flex-start; gap: 10px; width: 100%; margin-bottom: 15px; border-color: rgba(243, 186, 47, 0.3);">
                 <div>
                     <h4 style="font-size: 15px; color: var(--gold-primary); margin-bottom: 3px;">📤 Вивід UA монет</h4>
@@ -454,11 +453,10 @@
                 </div>
             </div>
 
-            <!-- Картка швидкої покупки за TON -->
             <div class="placeholder-card" style="flex-direction: column; align-items: flex-start; gap: 10px; width: 100%; margin-bottom: 15px; border-color: rgba(0, 152, 234, 0.3);">
                 <div>
                     <h4 style="font-size: 15px; color: var(--ton-blue); margin-bottom: 3px;">⚡ Купити прискорювач за TON</h4>
-                    <p>Додати +0.0001/с до швидкості (0.01 TON)</p>
+                    <p>Додати швидкість (0.01 TON)</p>
                 </div>
                 <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
                     <b style="font-size: 14px; color: var(--ton-blue);">0.01 TON</b>
@@ -538,7 +536,7 @@
 
         let totalAssets = 171.1932;
         let pendingGreen = 0.0000; 
-        let miningSpeed = 0.000000001;
+        let miningSpeed = 0.0005; // Збільшено базову швидкість, щоб одразу йшли помітні нарахування
 
         async function loadUserData() {
             const { data, error } = await supabaseClient
@@ -549,7 +547,7 @@
 
             if (data) {
                 totalAssets = parseFloat(data.balance);
-                if (data.speed !== null && data.speed !== undefined) {
+                if (data.speed !== null && data.speed !== undefined && data.speed > 0) {
                     miningSpeed = parseFloat(data.speed);
                 }
                 updateUI();
@@ -580,7 +578,7 @@
         function updateUI() {
             document.getElementById('total-assets').innerText = totalAssets.toFixed(4);
             document.getElementById('pool-assets').innerText = totalAssets.toFixed(4) + ' UA';
-            document.getElementById('speed-display').innerText = '+' + miningSpeed.toFixed(9) + '/с';
+            document.getElementById('speed-display').innerText = '+' + miningSpeed.toFixed(4) + '/с';
         }
 
         async function buyBoosterWithTON() {
@@ -607,7 +605,7 @@
                 
                 const result = await tonConnectUI.sendTransaction(transaction);
                 
-                miningSpeed += 0.0001;
+                miningSpeed += 0.001;
                 updateUI();
 
                 await supabaseClient
@@ -623,7 +621,6 @@
             }
         }
 
-        // Виправлена логіка виводу UA з комісією 10% та мінімальним порогом
         async function requestWithdrawal() {
             if (!tonConnectUI.connected) {
                 alert('Підключіть TON гаманець для виводу!');
@@ -631,17 +628,17 @@
                 return;
             }
 
-            const minWithdraw = 5000; // Поріг виводу
+            const minWithdraw = 5000;
             if (totalAssets < minWithdraw) {
                 alert(`Мінімальна сума для виводу — ${minWithdraw} UA. Ви маєте ${totalAssets.toFixed(2)} UA.`);
                 return;
             }
 
             const amountToWithdraw = totalAssets; 
-            const commission = amountToWithdraw * 0.10; // 10% комісія
+            const commission = amountToWithdraw * 0.10;
             const finalPayout = amountToWithdraw - commission;
 
-            if (confirm(`Запит на вивід: ${amountToWithdraw.toFixed(2)} UA\nКомісія системи (10%): ${commission.toFixed(2)} UA\nДо отримання на гаманець: ${finalPayout.toFixed(2)} UA\n\nПідтвердити вивід?`)) {
+            if (confirm(`Запит на вивід: ${amountToWithdraw.toFixed(2)} UA\nКомісія системи (10%): ${commission.toFixed(2)} UA\nДо отримання: ${finalPayout.toFixed(2)} UA\n\nПідтвердити вивід?`)) {
                 totalAssets = 0; 
                 updateUI();
 
@@ -650,36 +647,38 @@
                     .update({ balance: totalAssets })
                     .eq('id', userId);
 
-                alert(`Запит успішно створено! ${finalPayout.toFixed(2)} UA буде надіслано на ваш гаманець з урахуванням комісії.`);
+                alert(`Запит успішно створено! ${finalPayout.toFixed(2)} UA буде надіслано.`);
             }
         }
 
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-        let lastClickTime = 0;
+        // Надійний звук через аудіоконтекст
+        let audioCtx = null;
         function playClaimSound() {
-            const now = Date.now();
-            if (now - lastClickTime < 80) return;
-            lastClickTime = now;
-
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); 
+                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15); 
+                
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.2);
+            } catch (err) {
+                console.log('Audio error:', err);
             }
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); 
-            osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15); 
-            
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-            
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.2);
         }
 
         setInterval(() => {
@@ -688,15 +687,18 @@
         }, 1000);
 
         async function claimCoins() {
-            if (pendingGreen < 0.0001) return;
-
             playClaimSound(); 
+
+            if (pendingGreen < 0.0001) {
+                pendingGreen = miningSpeed; // Щоб завжди щось збиралося при кліку
+            }
 
             totalAssets += pendingGreen;
             updateUI();
 
             showFlyingNumber(pendingGreen);
 
+            const collected = pendingGreen;
             pendingGreen = 0.0000;
             document.getElementById('increment-display').innerText = '+0.0000';
 
