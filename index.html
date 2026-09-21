@@ -373,7 +373,7 @@
                 <div class="assets-title">Баланс активу</div>
                 <div class="assets-amount"><span id="total-assets">171.1932</span> UA</div>
                 <div class="wallet-breakdown">
-                    <div>Швидкість: <b id="speed-display" style="color: var(--green-accent);">+0.0012000/с</b></div>
+                    <div>Швидкість: <b id="speed-display" style="color: var(--green-accent);">+0.0015000/с</b></div>
                     <div>Виведено: <b id="withdrawn-display">0.0000000 UA</b></div>
                 </div>
             </div>
@@ -572,8 +572,8 @@
         let totalWithdrawn = 0.0000000; 
         let pendingGreen = 0.0000000; 
         
-        // Змінено швидкість на 0.0012 (~103.68 UA на добу)
-        let miningSpeed = 0.0012; 
+        // Встановлена швидкість 0.0015 (~129.6 UA на добу)
+        let miningSpeed = 0.0015; 
 
         const MAX_OFFLINE_HOURS = 12; 
         const MAX_OFFLINE_SECONDS = MAX_OFFLINE_HOURS * 3600;
@@ -653,6 +653,25 @@
         }
 
         loadUserData();
+
+        // Автозбереження даних при згортанні/закритті додатка
+        window.addEventListener('visibilitychange', async () => {
+            if (document.visibilityState === 'hidden') {
+                const nowTime = Math.floor(Date.now() / 1000);
+                await supabaseClient
+                    .from('users')
+                    .update({ balance: totalAssets, last_active: nowTime })
+                    .eq('id', userId);
+            }
+        });
+
+        window.addEventListener('beforeunload', async () => {
+            const nowTime = Math.floor(Date.now() / 1000);
+            await supabaseClient
+                .from('users')
+                .update({ balance: totalAssets, last_active: nowTime })
+                .eq('id', userId);
+        });
 
         async function completeTask(taskId, rewardAmount, linkUrl) {
             const taskKey = 'task_' + taskId + '_' + userId;
