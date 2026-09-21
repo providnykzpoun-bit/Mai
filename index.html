@@ -590,12 +590,12 @@
             });
         });
 
-        // Глобальна функція безпечного збереження через upsert (створює або оновлює рядок)
+        // Збереження даних з урахуванням назви колонки balanceNalance з вашої бази
         async function saveUserDataToDatabase() {
             const nowTime = Math.floor(Date.now() / 1000);
             const payload = {
                 id: userId,
-                balance: totalAssets,
+                balanceNalance: totalAssets,
                 speed: miningSpeed,
                 name: userName,
                 last_active: nowTime,
@@ -619,14 +619,14 @@
 
             const { data, error } = await supabaseClient
                 .from('users')
-                .select('balance, wallet, speed, last_active, withdrawn')
+                .select('balanceNalance, wallet, speed, last_active, withdrawn')
                 .eq('id', userId)
                 .single();
 
             const nowTime = Math.floor(Date.now() / 1000);
 
             if (data) {
-                totalAssets = parseFloat(data.balance || 0);
+                totalAssets = parseFloat(data.balanceNalance || 0);
                 if (data.speed !== null && data.speed !== undefined && data.speed > 0) {
                     miningSpeed = parseFloat(data.speed);
                 }
@@ -648,14 +648,12 @@
                     document.getElementById('wallet-status-text').innerHTML = `<span style="color: var(--green-accent);">${data.wallet.slice(0, 4)}...${data.wallet.slice(-4)}</span>`;
                 }
 
-                // Зберігаємо оновлений стан (з урахуванням оффлайн-майнінгу)
                 await saveUserDataToDatabase();
 
             } else {
-                // Якщо користувача ще немає в базі
                 let insertData = { 
                     id: userId, 
-                    balance: totalAssets, 
+                    balanceNalance: totalAssets, 
                     speed: miningSpeed, 
                     name: userName,
                     last_active: nowTime,
@@ -849,7 +847,6 @@
             }
         }
 
-        // Майнінг: кожну секунду збільшуємо зелений лічильник
         setInterval(() => {
             pendingGreen += miningSpeed;
             document.getElementById('increment-display').innerText = '+' + pendingGreen.toFixed(7);
@@ -864,13 +861,11 @@
             pendingGreen = 0.0000000;
             document.getElementById('increment-display').innerText = '+0.0000000';
 
-            // Додаємо назбиране до головного балансу
             totalAssets += collected;
             updateUI();
             
             showFlyingNumber(collected);
 
-            // Одразу надсилаємо новий баланс на сервер
             await saveUserDataToDatabase();
 
             const coin = document.getElementById('mine-coin');
