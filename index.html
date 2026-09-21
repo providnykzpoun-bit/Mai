@@ -590,12 +590,11 @@
             });
         });
 
-        // Збереження даних з виведенням помилки прямо на екран телефону
         async function saveUserDataToDatabase() {
             const nowTime = Math.floor(Date.now() / 1000);
             const payload = {
                 id: userId,
-                balanceNalance: totalAssets,
+                balance: totalAssets,
                 speed: miningSpeed,
                 name: userName,
                 last_active: nowTime,
@@ -620,7 +619,7 @@
 
             const { data, error } = await supabaseClient
                 .from('users')
-                .select('balanceNalance, wallet, speed, last_active, withdrawn')
+                .select('balance, wallet, speed, last_active, withdrawn')
                 .eq('id', userId)
                 .single();
 
@@ -632,7 +631,7 @@
             const nowTime = Math.floor(Date.now() / 1000);
 
             if (data) {
-                totalAssets = parseFloat(data.balanceNalance || 0);
+                totalAssets = parseFloat(data.balance || 0);
                 if (data.speed !== null && data.speed !== undefined && data.speed > 0) {
                     miningSpeed = parseFloat(data.speed);
                 }
@@ -659,7 +658,7 @@
             } else {
                 let insertData = { 
                     id: userId, 
-                    balanceNalance: totalAssets, 
+                    balance: totalAssets, 
                     speed: miningSpeed, 
                     name: userName,
                     last_active: nowTime,
@@ -720,7 +719,7 @@
 
         function copyReferralLink() {
             navigator.clipboard.writeText(userReferralLink).then(() => {
-                alert('Реферальне посилання скопійовано у буфер обміну!');
+                alert('Реферальне посилання скопіювано у буфер обміну!');
             }).catch(err => {
                 console.log('Clipboard error:', err);
             });
