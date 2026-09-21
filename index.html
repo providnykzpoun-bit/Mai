@@ -370,13 +370,13 @@
                 <div class="assets-title">Баланс активу</div>
                 <div class="assets-amount"><span id="total-assets">171.1932</span> UA</div>
                 <div class="wallet-breakdown">
-                    <div>Швидкість: <b id="speed-display" style="color: var(--green-accent);">+0.0001/с</b></div>
+                    <div>Швидкість: <b id="speed-display" style="color: var(--green-accent);">+0.0000001/с</b></div>
                     <div>Пул: <b id="pool-assets">171.1932 UA</b></div>
                 </div>
             </div>
 
             <div class="mining-display">
-                <div class="increment-value" id="increment-display">+0.0000</div>
+                <div class="increment-value" id="increment-display">+0.0000000</div>
             </div>
 
             <div class="coin-container" id="coin-parent">
@@ -417,7 +417,7 @@
             <div class="placeholder-card" style="flex-direction: column; align-items: flex-start; gap: 10px;">
                 <div>
                     <h4 style="font-size: 16px; margin-bottom: 4px;">Квантовий прискорювач ⚡</h4>
-                    <p>Збільшує генерацію на +0.001/с (Курс: 0.01 TON = 5000 UA)</p>
+                    <p>Збільшує генерацію (Курс: 0.01 TON = 5000 UA)</p>
                 </div>
                 <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; margin-top: 5px;">
                     <b style="color: var(--ton-blue);">Ціна: 0.01 TON</b>
@@ -535,8 +535,8 @@
         document.getElementById('profile-id-text').innerText = userId;
 
         let totalAssets = 171.1932;
-        let pendingGreen = 0.0000; 
-        let miningSpeed = 0.0005; // Збільшено базову швидкість, щоб одразу йшли помітні нарахування
+        let pendingGreen = 0.0000000; 
+        let miningSpeed = 0.0000001; // Встановлено 0.0000001/с як ви і просили
 
         async function loadUserData() {
             const { data, error } = await supabaseClient
@@ -578,7 +578,7 @@
         function updateUI() {
             document.getElementById('total-assets').innerText = totalAssets.toFixed(4);
             document.getElementById('pool-assets').innerText = totalAssets.toFixed(4) + ' UA';
-            document.getElementById('speed-display').innerText = '+' + miningSpeed.toFixed(4) + '/с';
+            document.getElementById('speed-display').innerText = '+' + miningSpeed.toFixed(7) + '/с';
         }
 
         async function buyBoosterWithTON() {
@@ -605,7 +605,7 @@
                 
                 const result = await tonConnectUI.sendTransaction(transaction);
                 
-                miningSpeed += 0.001;
+                miningSpeed += 0.0000010;
                 updateUI();
 
                 await supabaseClient
@@ -651,7 +651,6 @@
             }
         }
 
-        // Надійний звук через аудіоконтекст
         let audioCtx = null;
         function playClaimSound() {
             try {
@@ -683,14 +682,14 @@
 
         setInterval(() => {
             pendingGreen += miningSpeed;
-            document.getElementById('increment-display').innerText = '+' + pendingGreen.toFixed(4);
+            document.getElementById('increment-display').innerText = '+' + pendingGreen.toFixed(7);
         }, 1000);
 
         async function claimCoins() {
             playClaimSound(); 
 
-            if (pendingGreen < 0.0001) {
-                pendingGreen = miningSpeed; // Щоб завжди щось збиралося при кліку
+            if (pendingGreen < 0.0000001) {
+                pendingGreen = miningSpeed; 
             }
 
             totalAssets += pendingGreen;
@@ -698,9 +697,8 @@
 
             showFlyingNumber(pendingGreen);
 
-            const collected = pendingGreen;
-            pendingGreen = 0.0000;
-            document.getElementById('increment-display').innerText = '+0.0000';
+            pendingGreen = 0.0000000;
+            document.getElementById('increment-display').innerText = '+0.0000000';
 
             await supabaseClient
                 .from('users')
@@ -718,7 +716,7 @@
             const container = document.getElementById('coin-parent');
             const flyer = document.createElement('div');
             flyer.className = 'floating-number';
-            flyer.innerText = '+' + amount.toFixed(4);
+            flyer.innerText = '+' + amount.toFixed(7);
             
             container.appendChild(flyer);
             setTimeout(() => {
