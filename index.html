@@ -572,7 +572,6 @@
         let totalWithdrawn = 0.0000000; 
         let pendingGreen = 0.0000000; 
         
-        // Встановлена швидкість 0.0015 (~129.6 UA на добу)
         let miningSpeed = 0.0015; 
 
         const MAX_OFFLINE_HOURS = 12; 
@@ -654,7 +653,6 @@
 
         loadUserData();
 
-        // Автозбереження даних при згортанні/закритті додатка
         window.addEventListener('visibilitychange', async () => {
             if (document.visibilityState === 'hidden') {
                 const nowTime = Math.floor(Date.now() / 1000);
@@ -856,21 +854,28 @@
             }
         }
 
-        setInterval(() => {
+        // ВИПРАВЛЕННЯ: Щосекунди додаємо швидкість і до зеленого лічильника, і одразу до загального балансу
+        setInterval(async () => {
+            totalAssets += miningSpeed;
             pendingGreen += miningSpeed;
+            
             document.getElementById('increment-display').innerText = '+' + pendingGreen.toFixed(7);
+            updateUI();
+
+            // Автозбереження в базу кожні 10 секунд, щоб баланс не губився
+            if (Math.floor(Date.now() / 1000) % 10 === 0) {
+                const nowTime = Math.floor(Date.now() / 1000);
+                await supabaseClient
+                    .from('users')
+                    .update({ balance: totalAssets, last_active: nowTime })
+                    .eq('id', userId);
+            }
         }, 1000);
 
         async function claimCoins() {
-            playClaimSound(); 
+            playPlayClaimSound = playClaimSound(); 
 
-            if (pendingGreen < 0.0000001) {
-                pendingGreen = miningSpeed; 
-            }
-
-            totalAssets += pendingGreen;
-            updateUI();
-
+            // Кнопка Claim тепер просто анімація і швидке оновлення статусу
             showFlyingNumber(pendingGreen);
 
             pendingGreen = 0.0000000;
@@ -893,7 +898,7 @@
             const container = document.getElementById('coin-parent');
             const flyer = document.createElement('div');
             flyer.className = 'floating-number';
-            flyer.innerText = '+' + amount.toFixed(7);
+            flyer.innerText = '+' + (amount > 0 ? amount.toFixed(7) : miningSpeed.toFixed(7));
             
             container.appendChild(flyer);
             setTimeout(() => {
