@@ -619,7 +619,7 @@
                     if (diffSeconds > 0) {
                         let activeSeconds = Math.min(diffSeconds, MAX_OFFLINE_SECONDS);
                         let offlineEarned = activeSeconds * miningSpeed;
-                        totalAssets += offlineEarned; // офлайн-нарахування одразу додаємо в актив при вході
+                        totalAssets += offlineEarned; 
                     }
                 }
 
@@ -705,10 +705,9 @@
         }
 
         function copyReferralLink() {
-            navigator.clipboard.writeText(userReferralLink).text().then(() => {
+            navigator.clipboard.writeText(userReferralLink).then(() => {
                 alert('Реферальне посилання скопійовано у буфер обміну!');
             }).catch(err => {
-                // резервний метод копіювання
                 console.log('Clipboard error:', err);
             });
         }
@@ -855,7 +854,7 @@
             }
         }
 
-        // ВИПРАВЛЕННЯ: Щосекунди наповнюється ТІЛЬКИ зелений лічильник. Верхній рахунок тепер спокійний.
+        // РЕЖИМ МАЙНІНГУ: щодоби/щосекунди крутиться ТІЛЬКИ зелений лічильник нижче
         setInterval(() => {
             pendingGreen += miningSpeed;
             document.getElementById('increment-display').innerText = '+' + pendingGreen.toFixed(7);
@@ -866,15 +865,15 @@
 
             if (pendingGreen <= 0) return;
 
-            // Додаємо зібране з зеленого лічильника до загального верхнього балансу
-            totalAssets += pendingGreen;
-            
-            showFlyingNumber(pendingGreen);
-
             let collected = pendingGreen;
             pendingGreen = 0.0000000;
             document.getElementById('increment-display').innerText = '+0.0000000';
+
+            // Додаємо назбиране до верхнього активу і ОДРАЗУ оновлюємо екран
+            totalAssets += collected;
             updateUI();
+            
+            showFlyingNumber(collected);
 
             const nowTime = Math.floor(Date.now() / 1000);
             await supabaseClient
