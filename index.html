@@ -336,6 +336,9 @@
             font-weight: 600;
             cursor: pointer;
             transition: background 0.2s;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
         }
 
         .action-chip:active {
@@ -394,22 +397,47 @@
 
         <!-- VIEW 2: TASKS -->
         <div id="view-tasks" class="view-content">
-            <div class="section-title">Щоденні завдання</div>
+            <div class="section-title">Завдання та проєкти</div>
             
             <div class="placeholder-card">
                 <div>
-                    <h4 style="font-size: 15px; margin-bottom: 3px;">Підписка на Telegram канал</h4>
-                    <p>Отримайте бонус +5.0 UA</p>
+                    <h4 style="font-size: 15px; margin-bottom: 3px;">Магазин</h4>
+                    <p>Перейти (+3.0 UA)</p>
                 </div>
-                <button class="action-chip" id="task-channel-btn" style="background: rgba(243, 186, 47, 0.15); color: var(--gold-primary); border-color: rgba(243, 186, 47, 0.3);" onclick="completeTask('channel_sub', 5.0)">Виконати</button>
+                <button class="action-chip" id="task-shop-btn" style="background: rgba(243, 186, 47, 0.15); color: var(--gold-primary); border-color: rgba(243, 186, 47, 0.3);" onclick="completeTask('shop', 3.0, 'https://t.me/magazyn8q_bot?start=item_663093')">Виконати</button>
             </div>
 
             <div class="placeholder-card">
                 <div>
-                    <h4 style="font-size: 15px; margin-bottom: 3px;">Запросити друга</h4>
-                    <p>Поділіться посиланням (+10.0 UA)</p>
+                    <h4 style="font-size: 15px; margin-bottom: 3px;">DaniUA Бот</h4>
+                    <p>Перейти (+3.0 UA)</p>
                 </div>
-                <button class="action-chip" style="background: rgba(243, 186, 47, 0.15); color: var(--gold-primary); border-color: rgba(243, 186, 47, 0.3);" onclick="switchView('friends', document.querySelectorAll('.nav-item')[3])">Перейти</button>
+                <button class="action-chip" id="task-dani-btn" style="background: rgba(243, 186, 47, 0.15); color: var(--gold-primary); border-color: rgba(243, 186, 47, 0.3);" onclick="completeTask('dani', 3.0, 'http://t.me/DaniUA_bot')">Виконати</button>
+            </div>
+
+            <div class="placeholder-card">
+                <div>
+                    <h4 style="font-size: 15px; margin-bottom: 3px;">Telegram Спільнота</h4>
+                    <p>Підписатися (+3.0 UA)</p>
+                </div>
+                <button class="action-chip" id="task-group-btn" style="background: rgba(243, 186, 47, 0.15); color: var(--gold-primary); border-color: rgba(243, 186, 47, 0.3);" onclick="completeTask('group', 3.0, 'https://t.me/+8BxntHhMGsw4NmJi')">Виконати</button>
+            </div>
+
+            <div style="font-size: 16px; font-weight: 700; margin: 15px 0 10px 0; color: var(--gold-primary);">😎 Наші ігри та екосистема 😎</div>
+
+            <div class="placeholder-card" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                <p style="font-size: 13px; color: var(--text-secondary);">Обирайте проєкти та боти:</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px;">
+                    <a href="https://t.me/Uatetriss_bot" target="_blank" class="action-chip">Tetris</a>
+                    <a href="https://t.me/Uapay_bot" target="_blank" class="action-chip">Mining</a>
+                    <a href="https://t.me/Tarasgra_bot" target="_blank" class="action-chip">Тарас</a>
+                    <a href="https://t.me/Lotouabot_bot" target="_blank" class="action-chip">5 із 36</a>
+                    <a href="https://t.me/Presbotpress_bot" target="_blank" class="action-chip">Боулінг</a>
+                    <a href="https://t.me/Zagadkiua_bot" target="_blank" class="action-chip">Лотерея</a>
+                    <a href="https://t.me/Uabilbot_bot" target="_blank" class="action-chip">Більярд</a>
+                    <a href="https://t.me/Brodilkaua_bot" target="_blank" class="action-chip">Броділка</a>
+                    <a href="https://t.me/Zsudonat_bot" target="_blank" class="action-chip">Таанчик</a>
+                </div>
             </div>
         </div>
 
@@ -446,11 +474,11 @@
             
             <div class="placeholder-card" style="flex-direction: column; align-items: flex-start; gap: 10px; width: 100%; margin-bottom: 15px; border-color: rgba(243, 186, 47, 0.3);">
                 <div>
-                    <h4 style="font-size: 15px; color: var(--gold-primary); margin-bottom: 3px;">📤 Вивід UA монет</h4>
+                    <h4 style="font-size: 15px; color: var(--gold-primary); margin-bottom: 3px;">📤 Вивід UA монет через @tokenpist_bot</h4>
                     <p>Мінімум: 5000 UA | Комісія мережі: 10%</p>
                 </div>
                 <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-                    <b style="font-size: 13px; color: var(--text-secondary);">Зняти на гаманець</b>
+                    <b style="font-size: 13px; color: var(--text-secondary);">Сформувати запит</b>
                     <button class="action-chip" style="background: rgba(243, 186, 47, 0.15); color: var(--gold-primary); border-color: rgba(243, 186, 47, 0.3); padding: 8px 16px; font-size: 13px;" onclick="requestWithdrawal()">Вивести UA</button>
                 </div>
             </div>
@@ -534,7 +562,6 @@
             }
         }
 
-        // Формуємо персональне реферальне посилання з параметром start
         userReferralLink = `https://t.me/Perchenya_bot?start=${userId}`;
         document.getElementById('ref-link-display').innerText = userReferralLink;
 
@@ -548,18 +575,18 @@
         const MAX_OFFLINE_HOURS = 12; 
         const MAX_OFFLINE_SECONDS = MAX_OFFLINE_HOURS * 3600;
 
-        // Перевірка виконання завдань з localStorage після завантаження
         document.addEventListener("DOMContentLoaded", () => {
-            const isSubDone = localStorage.getItem('task_channel_sub_' + userId);
-            if (isSubDone) {
-                const btn = document.getElementById('task-channel-btn');
-                if (btn) {
-                    btn.innerText = 'Виконано ✓';
-                    btn.style.background = 'rgba(0, 255, 136, 0.15)';
-                    btn.style.color = 'var(--green-accent)';
-                    btn.style.borderColor = 'rgba(0, 255, 136, 0.4)';
+            ['shop', 'dani', 'group'].forEach(taskId => {
+                if (localStorage.getItem('task_' + taskId + '_' + userId)) {
+                    const btn = document.getElementById('task-' + taskId + '-btn');
+                    if (btn) {
+                        btn.innerText = 'Виконано ✓';
+                        btn.style.background = 'rgba(0, 255, 136, 0.15)';
+                        btn.style.color = 'var(--green-accent)';
+                        btn.style.borderColor = 'rgba(0, 255, 136, 0.4)';
+                    }
                 }
-            }
+            });
         });
 
         async function loadUserData() {
@@ -620,16 +647,15 @@
 
         loadUserData();
 
-        async function completeTask(taskId, rewardAmount) {
+        async function completeTask(taskId, rewardAmount, linkUrl) {
             const taskKey = 'task_' + taskId + '_' + userId;
             if (localStorage.getItem(taskKey)) {
                 alert('Ви вже виконали це завдання!');
                 return;
             }
 
-            if (taskId === 'channel_sub') {
-                // Можете замінити посилання на свій канал або чат
-                window.open('https://t.me/RadioUdvoh_bot', '_blank');
+            if (linkUrl) {
+                window.open(linkUrl, '_blank');
             }
 
             totalAssets += rewardAmount;
@@ -637,7 +663,7 @@
 
             localStorage.setItem(taskKey, 'true');
 
-            const btn = document.getElementById('task-channel-btn');
+            const btn = document.getElementById('task-' + taskId + '-btn');
             if (btn) {
                 btn.innerText = 'Виконано ✓';
                 btn.style.background = 'rgba(0, 255, 136, 0.15)';
@@ -739,16 +765,34 @@
             const commission = amountToWithdraw * 0.10;
             const finalPayout = amountToWithdraw - commission;
 
-            if (confirm(`Запит на вивід: ${amountToWithdraw.toFixed(2)} UA\nКомісія системи (10%): ${commission.toFixed(2)} UA\nДо отримання: ${finalPayout.toFixed(2)} UA\n\nПідтвердити вивід?`)) {
+            const walletInfo = tonConnectUI.wallet;
+            const userWalletAddress = walletInfo ? walletInfo.account.address : 'Не вказано';
+
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('uk-UA') + ' ' + now.toLocaleTimeString('uk-UA');
+
+            const messageText = 
+                `📤 Запит на вивід UA Token\n` +
+                `👤 Нік: ${userName} (${userId})\n` +
+                `💰 Сума: ${amountToWithdraw.toFixed(2)} UA\n` +
+                `📉 Комісія (10%): ${commission.toFixed(2)} UA\n` +
+                `✅ До отримання: ${finalPayout.toFixed(2)} UA\n` +
+                `💳 Гаманець: ${userWalletAddress}\n` +
+                `🤖 Бот: UA Mining (Perchenya_bot)\n` +
+                `📅 Дата: ${dateStr}`;
+
+            if (confirm(`Створити запит на вивід ${finalPayout.toFixed(2)} UA через @tokenpist_bot?`)) {
                 totalAssets = 0; 
                 updateUI();
 
+                const nowTime = Math.floor(Date.now() / 1000);
                 await supabaseClient
                     .from('users')
-                    .update({ balance: totalAssets })
+                    .update({ balance: totalAssets, last_active: nowTime })
                     .eq('id', userId);
 
-                alert(`Запит успішно створено! ${finalPayout.toFixed(2)} UA буде надіслано.`);
+                const encodedText = encodeURIComponent(messageText);
+                window.open(`https://t.me/tokenpist_bot?text=${encodedText}`, '_blank');
             }
         }
 
