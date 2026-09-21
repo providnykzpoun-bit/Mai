@@ -371,7 +371,7 @@
         <div id="view-mine" class="view-content active">
             <div class="assets-card" id="assets-card-box">
                 <div class="assets-title">Баланс активу</div>
-                <div class="assets-amount"><span id="total-assets">171.1932</span> UA</div>
+                <div class="assets-amount"><span id="total-assets">0.0000000</span> UA</div>
                 <div class="wallet-breakdown">
                     <div>Швидкість: <b id="speed-display" style="color: var(--green-accent);">+0.0015000/с</b></div>
                     <div>Виведено: <b id="withdrawn-display">0.0000000 UA</b></div>
@@ -571,7 +571,6 @@
         let totalAssets = 171.1932;
         let totalWithdrawn = 0.0000000; 
         let pendingGreen = 0.0000000; 
-        
         let miningSpeed = 0.0015; 
 
         const MAX_OFFLINE_HOURS = 12; 
@@ -591,6 +590,27 @@
             });
         });
 
+        // Глобальна функція безпечного збереження через upsert (створює або оновлює рядок)
+        async function saveUserDataToDatabase() {
+            const nowTime = Math.floor(Date.now() / 1000);
+            const payload = {
+                id: userId,
+                balance: totalAssets,
+                speed: miningSpeed,
+                name: userName,
+                last_active: nowTime,
+                withdrawn: totalWithdrawn
+            };
+
+            const { error } = await supabaseClient
+                .from('users')
+                .upsert(payload, { onConflict: 'id' });
+
+            if (error) {
+                console.error('Помилка збереження в базу даних:', error);
+            }
+        }
+
         async function loadUserData() {
             let invitedBy = null;
             if (tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
@@ -606,7 +626,7 @@
             const nowTime = Math.floor(Date.now() / 1000);
 
             if (data) {
-                totalAssets = parseFloat(data.balance);
+                totalAssets = parseFloat(data.balance || 0);
                 if (data.speed !== null && data.speed !== undefined && data.speed > 0) {
                     miningSpeed = parseFloat(data.speed);
                 }
@@ -628,12 +648,11 @@
                     document.getElementById('wallet-status-text').innerHTML = `<span style="color: var(--green-accent);">${data.wallet.slice(0, 4)}...${data.wallet.slice(-4)}</span>`;
                 }
 
-                await supabaseClient
-                    .from('users')
-                    .update({ balance: totalAssets, last_active: nowTime })
-                    .eq('id', userId);
+                // Зберігаємо оновлений стан (з урахуванням оффлайн-майнінгу)
+                await saveUserDataToDatabase();
 
             } else {
+                // Якщо користувача ще немає в базі
                 let insertData = { 
                     id: userId, 
                     balance: totalAssets, 
@@ -648,6 +667,7 @@
                 }
 
                 await supabaseClient.from('users').insert([insertData]);
+                updateUI();
             }
         }
 
@@ -655,20 +675,12 @@
 
         window.addEventListener('visibilitychange', async () => {
             if (document.visibilityState === 'hidden') {
-                const nowTime = Math.floor(Date.now() / 1000);
-                await supabaseClient
-                    .from('users')
-                    .update({ balance: totalAssets, last_active: nowTime })
-                    .eq('id', userId);
+                await saveUserDataToDatabase();
             }
         });
 
         window.addEventListener('beforeunload', async () => {
-            const nowTime = Math.floor(Date.now() / 1000);
-            await supabaseClient
-                .from('users')
-                .update({ balance: totalAssets, last_active: nowTime })
-                .eq('id', userId);
+            await saveUserDataToDatabase();
         });
 
         async function completeTask(taskId, rewardAmount, linkUrl) {
@@ -695,12 +707,7 @@
                 btn.style.borderColor = 'rgba(0, 255, 136, 0.4)';
             }
 
-            const nowTime = Math.floor(Date.now() / 1000);
-            await supabaseClient
-                .from('users')
-                .update({ balance: totalAssets, last_active: nowTime })
-                .eq('id', userId);
-
+            await saveUserDataToDatabase();
             alert(`Вітаємо! Ви отримали +${rewardAmount} UA`);
         }
 
@@ -759,11 +766,7 @@
                 miningSpeed += 0.0001000;
                 updateUI();
 
-                await supabaseClient
-                    .from('users')
-                    .update({ speed: miningSpeed })
-                    .eq('id', userId);
-
+                await saveUserDataToDatabase();
                 alert('Успіх! Транзакцію прийнято, швидкість майнінгу збільшено 🚀');
 
             } catch (e) {
@@ -810,15 +813,7 @@
                 totalAssets = 0; 
                 updateUI();
 
-                const nowTime = Math.floor(Date.now() / 1000);
-                await supabaseClient
-                    .from('users')
-                    .update({ 
-                        balance: totalAssets, 
-                        withdrawn: totalWithdrawn, 
-                        last_active: nowTime 
-                    })
-                    .eq('id', userId);
+                await saveUserDataToDatabase();
 
                 const encodedText = encodeURIComponent(messageText);
                 window.open(`https://t.me/tokenpist_bot?text=${encodedText}`, '_blank');
@@ -854,7 +849,7 @@
             }
         }
 
-        // РЕЖИМ МАЙНІНГУ: щодоби/щосекунди крутиться ТІЛЬКИ зелений лічильник нижче
+        // Майнінг: кожну секунду збільшуємо зелений лічильник
         setInterval(() => {
             pendingGreen += miningSpeed;
             document.getElementById('increment-display').innerText = '+' + pendingGreen.toFixed(7);
@@ -869,17 +864,14 @@
             pendingGreen = 0.0000000;
             document.getElementById('increment-display').innerText = '+0.0000000';
 
-            // Додаємо назбиране до верхнього активу і ОДРАЗУ оновлюємо екран
+            // Додаємо назбиране до головного балансу
             totalAssets += collected;
             updateUI();
             
             showFlyingNumber(collected);
 
-            const nowTime = Math.floor(Date.now() / 1000);
-            await supabaseClient
-                .from('users')
-                .update({ balance: totalAssets, last_active: nowTime })
-                .eq('id', userId);
+            // Одразу надсилаємо новий баланс на сервер
+            await saveUserDataToDatabase();
 
             const coin = document.getElementById('mine-coin');
             coin.style.transform = 'scale(0.88)';
@@ -890,6 +882,7 @@
 
         function showFlyingNumber(amount) {
             const container = document.getElementById('coin-parent');
+        
             const flyer = document.createElement('div');
             flyer.className = 'floating-number';
             flyer.innerText = '+' + amount.toFixed(7);
