@@ -395,19 +395,21 @@
         <!-- VIEW 2: TASKS -->
         <div id="view-tasks" class="view-content">
             <div class="section-title">Щоденні завдання</div>
+            
             <div class="placeholder-card">
                 <div>
-                    <h4 style="font-size: 15px; margin-bottom: 3px;">Підписка на Telegram</h4>
-                    <p>Отримайте бонус за активність</p>
+                    <h4 style="font-size: 15px; margin-bottom: 3px;">Підписка на Telegram канал</h4>
+                    <p>Отримайте бонус +5.0 UA</p>
                 </div>
-                <button class="action-chip" style="background: rgba(243, 186, 47, 0.15); color: var(--gold-primary); border-color: rgba(243, 186, 47, 0.3);" onclick="alert('Завдання перевірено!')">+5.0 UA</button>
+                <button class="action-chip" id="task-channel-btn" style="background: rgba(243, 186, 47, 0.15); color: var(--gold-primary); border-color: rgba(243, 186, 47, 0.3);" onclick="completeTask('channel_sub', 5.0)">Виконати</button>
             </div>
+
             <div class="placeholder-card">
                 <div>
                     <h4 style="font-size: 15px; margin-bottom: 3px;">Запросити друга</h4>
-                    <p>Роздайте реферальне посилання</p>
+                    <p>Поділіться посиланням (+10.0 UA)</p>
                 </div>
-                <button class="action-chip" style="background: rgba(243, 186, 47, 0.15); color: var(--gold-primary); border-color: rgba(243, 186, 47, 0.3);" onclick="alert('Посилання скопійовано!')">+10.0 UA</button>
+                <button class="action-chip" style="background: rgba(243, 186, 47, 0.15); color: var(--gold-primary); border-color: rgba(243, 186, 47, 0.3);" onclick="switchView('friends', document.querySelectorAll('.nav-item')[3])">Перейти</button>
             </div>
         </div>
 
@@ -431,10 +433,10 @@
             <div class="section-title">Реферальна програма</div>
             <div class="placeholder-card" style="flex-direction: column; align-items: flex-start; gap: 12px;">
                 <div>
-                    <h4 style="font-size: 16px; margin-bottom: 4px;">Запрошуйте друзів</h4>
-                    <p>Отримуйте 10% від їхнього майнінгу на свій баланс автоматично.</p>
+                    <h4 style="font-size: 16px; margin-bottom: 4px;">Ваше унікальне посилання</h4>
+                    <p id="ref-link-display" style="word-break: break-all; color: var(--gold-primary); font-size: 13px; margin-top: 6px;">https://t.me/Perchenya_bot</p>
                 </div>
-                <button class="claim-btn" style="padding: 12px; font-size: 15px;" onclick="alert('Посилання створено!')">Поділитися посиланням</button>
+                <button class="claim-btn" style="padding: 12px; font-size: 15px;" onclick="copyReferralLink()">Скопіювати посилання</button>
             </div>
         </div>
 
@@ -518,6 +520,7 @@
 
         let userId = 'user_leslav';
         let userName = 'Михайло 🐝';
+        let userReferralLink = 'https://t.me/Perchenya_bot';
 
         if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
             const tgUser = tg.initDataUnsafe.user;
@@ -531,35 +534,133 @@
             }
         }
 
+        // Формуємо персональне реферальне посилання з параметром start
+        userReferralLink = `https://t.me/Perchenya_bot?start=${userId}`;
+        document.getElementById('ref-link-display').innerText = userReferralLink;
+
         document.getElementById('user-name').innerText = userName;
         document.getElementById('profile-id-text').innerText = userId;
 
         let totalAssets = 171.1932;
         let pendingGreen = 0.0000000; 
-        let miningSpeed = 0.0000001; // Встановлено 0.0000001/с як ви і просили
+        let miningSpeed = 0.0000001; 
+
+        const MAX_OFFLINE_HOURS = 12; 
+        const MAX_OFFLINE_SECONDS = MAX_OFFLINE_HOURS * 3600;
+
+        // Перевірка виконання завдань з localStorage після завантаження
+        document.addEventListener("DOMContentLoaded", () => {
+            const isSubDone = localStorage.getItem('task_channel_sub_' + userId);
+            if (isSubDone) {
+                const btn = document.getElementById('task-channel-btn');
+                if (btn) {
+                    btn.innerText = 'Виконано ✓';
+                    btn.style.background = 'rgba(0, 255, 136, 0.15)';
+                    btn.style.color = 'var(--green-accent)';
+                    btn.style.borderColor = 'rgba(0, 255, 136, 0.4)';
+                }
+            }
+        });
 
         async function loadUserData() {
+            let invitedBy = null;
+            if (tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
+                invitedBy = tg.initDataUnsafe.start_param;
+            }
+
             const { data, error } = await supabaseClient
                 .from('users')
-                .select('balance, wallet, speed')
+                .select('balance, wallet, speed, last_active')
                 .eq('id', userId)
                 .single();
+
+            const nowTime = Math.floor(Date.now() / 1000);
 
             if (data) {
                 totalAssets = parseFloat(data.balance);
                 if (data.speed !== null && data.speed !== undefined && data.speed > 0) {
                     miningSpeed = parseFloat(data.speed);
                 }
+
+                if (data.last_active) {
+                    let diffSeconds = nowTime - data.last_active;
+                    if (diffSeconds > 0) {
+                        let activeSeconds = Math.min(diffSeconds, MAX_OFFLINE_SECONDS);
+                        let offlineEarned = activeSeconds * miningSpeed;
+                        totalAssets += offlineEarned;
+                    }
+                }
+
                 updateUI();
                 if (data.wallet) {
                     document.getElementById('wallet-status-text').innerHTML = `<span style="color: var(--green-accent);">${data.wallet.slice(0, 4)}...${data.wallet.slice(-4)}</span>`;
                 }
+
+                await supabaseClient
+                    .from('users')
+                    .update({ balance: totalAssets, last_active: nowTime })
+                    .eq('id', userId);
+
             } else {
-                await supabaseClient.from('users').insert([{ id: userId, balance: totalAssets, speed: miningSpeed, name: userName }]);
+                let insertData = { 
+                    id: userId, 
+                    balance: totalAssets, 
+                    speed: miningSpeed, 
+                    name: userName,
+                    last_active: nowTime
+                };
+
+                if (invitedBy && invitedBy !== userId) {
+                    insertData.invited_by = invitedBy;
+                }
+
+                await supabaseClient.from('users').insert([insertData]);
             }
         }
 
         loadUserData();
+
+        async function completeTask(taskId, rewardAmount) {
+            const taskKey = 'task_' + taskId + '_' + userId;
+            if (localStorage.getItem(taskKey)) {
+                alert('Ви вже виконали це завдання!');
+                return;
+            }
+
+            if (taskId === 'channel_sub') {
+                // Можете замінити посилання на свій канал або чат
+                window.open('https://t.me/RadioUdvoh_bot', '_blank');
+            }
+
+            totalAssets += rewardAmount;
+            updateUI();
+
+            localStorage.setItem(taskKey, 'true');
+
+            const btn = document.getElementById('task-channel-btn');
+            if (btn) {
+                btn.innerText = 'Виконано ✓';
+                btn.style.background = 'rgba(0, 255, 136, 0.15)';
+                btn.style.color = 'var(--green-accent)';
+                btn.style.borderColor = 'rgba(0, 255, 136, 0.4)';
+            }
+
+            const nowTime = Math.floor(Date.now() / 1000);
+            await supabaseClient
+                .from('users')
+                .update({ balance: totalAssets, last_active: nowTime })
+                .eq('id', userId);
+
+            alert(`Вітаємо! Ви отримали +${rewardAmount} UA`);
+        }
+
+        function copyReferralLink() {
+            navigator.clipboard.writeText(userReferralLink).then(() => {
+                alert('Реферальне посилання скопійовано у буфер обміну!');
+            }).catch(err => {
+                console.error('Не вдалося скопіювати:', err);
+            });
+        }
 
         tonConnectUI.onStatusChange(async wallet => {
             if (wallet) {
@@ -700,9 +801,10 @@
             pendingGreen = 0.0000000;
             document.getElementById('increment-display').innerText = '+0.0000000';
 
+            const nowTime = Math.floor(Date.now() / 1000);
             await supabaseClient
                 .from('users')
-                .update({ balance: totalAssets })
+                .update({ balance: totalAssets, last_active: nowTime })
                 .eq('id', userId);
 
             const coin = document.getElementById('mine-coin');
