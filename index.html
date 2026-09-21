@@ -619,7 +619,7 @@
                     if (diffSeconds > 0) {
                         let activeSeconds = Math.min(diffSeconds, MAX_OFFLINE_SECONDS);
                         let offlineEarned = activeSeconds * miningSpeed;
-                        totalAssets += offlineEarned;
+                        totalAssets += offlineEarned; // офлайн-нарахування одразу додаємо в актив при вході
                     }
                 }
 
@@ -705,10 +705,11 @@
         }
 
         function copyReferralLink() {
-            navigator.clipboard.writeText(userReferralLink).then(() => {
+            navigator.clipboard.writeText(userReferralLink).text().then(() => {
                 alert('Реферальне посилання скопійовано у буфер обміну!');
             }).catch(err => {
-                console.error('Не вдалося скопіювати:', err);
+                // резервний метод копіювання
+                console.log('Clipboard error:', err);
             });
         }
 
@@ -854,32 +855,26 @@
             }
         }
 
-        // ВИПРАВЛЕННЯ: Щосекунди додаємо швидкість і до зеленого лічильника, і одразу до загального балансу
-        setInterval(async () => {
-            totalAssets += miningSpeed;
+        // ВИПРАВЛЕННЯ: Щосекунди наповнюється ТІЛЬКИ зелений лічильник. Верхній рахунок тепер спокійний.
+        setInterval(() => {
             pendingGreen += miningSpeed;
-            
             document.getElementById('increment-display').innerText = '+' + pendingGreen.toFixed(7);
-            updateUI();
-
-            // Автозбереження в базу кожні 10 секунд, щоб баланс не губився
-            if (Math.floor(Date.now() / 1000) % 10 === 0) {
-                const nowTime = Math.floor(Date.now() / 1000);
-                await supabaseClient
-                    .from('users')
-                    .update({ balance: totalAssets, last_active: nowTime })
-                    .eq('id', userId);
-            }
         }, 1000);
 
         async function claimCoins() {
-            playPlayClaimSound = playClaimSound(); 
+            playClaimSound(); 
 
-            // Кнопка Claim тепер просто анімація і швидке оновлення статусу
+            if (pendingGreen <= 0) return;
+
+            // Додаємо зібране з зеленого лічильника до загального верхнього балансу
+            totalAssets += pendingGreen;
+            
             showFlyingNumber(pendingGreen);
 
+            let collected = pendingGreen;
             pendingGreen = 0.0000000;
             document.getElementById('increment-display').innerText = '+0.0000000';
+            updateUI();
 
             const nowTime = Math.floor(Date.now() / 1000);
             await supabaseClient
@@ -898,7 +893,7 @@
             const container = document.getElementById('coin-parent');
             const flyer = document.createElement('div');
             flyer.className = 'floating-number';
-            flyer.innerText = '+' + (amount > 0 ? amount.toFixed(7) : miningSpeed.toFixed(7));
+            flyer.innerText = '+' + amount.toFixed(7);
             
             container.appendChild(flyer);
             setTimeout(() => {
