@@ -374,7 +374,7 @@
                 <div class="assets-amount"><span id="total-assets">171.1932</span> UA</div>
                 <div class="wallet-breakdown">
                     <div>Швидкість: <b id="speed-display" style="color: var(--green-accent);">+0.0000001/с</b></div>
-                    <div>Пул: <b id="pool-assets">171.1932 UA</b></div>
+                    <div>Виведено: <b id="withdrawn-display">0.0000000 UA</b></div>
                 </div>
             </div>
 
@@ -569,6 +569,7 @@
         document.getElementById('profile-id-text').innerText = userId;
 
         let totalAssets = 171.1932;
+        let totalWithdrawn = 0.0000000; // Зберігаємо загальну суму виведених
         let pendingGreen = 0.0000000; 
         let miningSpeed = 0.0000001; 
 
@@ -597,7 +598,7 @@
 
             const { data, error } = await supabaseClient
                 .from('users')
-                .select('balance, wallet, speed, last_active')
+                .select('balance, wallet, speed, last_active, withdrawn')
                 .eq('id', userId)
                 .single();
 
@@ -607,6 +608,9 @@
                 totalAssets = parseFloat(data.balance);
                 if (data.speed !== null && data.speed !== undefined && data.speed > 0) {
                     miningSpeed = parseFloat(data.speed);
+                }
+                if (data.withdrawn !== null && data.withdrawn !== undefined) {
+                    totalWithdrawn = parseFloat(data.withdrawn);
                 }
 
                 if (data.last_active) {
@@ -634,7 +638,8 @@
                     balance: totalAssets, 
                     speed: miningSpeed, 
                     name: userName,
-                    last_active: nowTime
+                    last_active: nowTime,
+                    withdrawn: 0.0000000
                 };
 
                 if (invitedBy && invitedBy !== userId) {
@@ -703,8 +708,8 @@
         });
 
         function updateUI() {
-            document.getElementById('total-assets').innerText = totalAssets.toFixed(4);
-            document.getElementById('pool-assets').innerText = totalAssets.toFixed(4) + ' UA';
+            document.getElementById('total-assets').innerText = totalAssets.toFixed(7);
+            document.getElementById('withdrawn-display').innerText = totalWithdrawn.toFixed(7) + ' UA';
             document.getElementById('speed-display').innerText = '+' + miningSpeed.toFixed(7) + '/с';
         }
 
@@ -774,21 +779,27 @@
             const messageText = 
                 `📤 Запит на вивід UA Token\n` +
                 `👤 Нік: ${userName} (${userId})\n` +
-                `💰 Сума: ${amountToWithdraw.toFixed(2)} UA\n` +
-                `📉 Комісія (10%): ${commission.toFixed(2)} UA\n` +
-                `✅ До отримання: ${finalPayout.toFixed(2)} UA\n` +
+                `💰 Сума: ${amountToWithdraw.toFixed(7)} UA\n` +
+                `📉 Комісія (10%): ${commission.toFixed(7)} UA\n` +
+                `✅ До отримання: ${finalPayout.toFixed(7)} UA\n` +
                 `💳 Гаманець: ${userWalletAddress}\n` +
                 `🤖 Бот: UA Mining (Perchenya_bot)\n` +
                 `📅 Дата: ${dateStr}`;
 
             if (confirm(`Створити запит на вивід ${finalPayout.toFixed(2)} UA через @tokenpist_bot?`)) {
+                // Додаємо виведену суму до загального лічильника виведених
+                totalWithdrawn += amountToWithdraw;
                 totalAssets = 0; 
                 updateUI();
 
                 const nowTime = Math.floor(Date.now() / 1000);
                 await supabaseClient
                     .from('users')
-                    .update({ balance: totalAssets, last_active: nowTime })
+                    .update({ 
+                        balance: totalAssets, 
+                        withdrawn: totalWithdrawn, 
+                        last_active: nowTime 
+                    })
                     .eq('id', userId);
 
                 const encodedText = encodeURIComponent(messageText);
@@ -847,7 +858,7 @@
 
             const nowTime = Math.floor(Date.now() / 1000);
             await supabaseClient
-                .from('users')
+                .from('users`')
                 .update({ balance: totalAssets, last_active: nowTime })
                 .eq('id', userId);
 
