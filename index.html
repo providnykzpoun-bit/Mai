@@ -370,7 +370,7 @@
                 <div class="assets-title">Баланс активу</div>
                 <div class="assets-amount"><span id="total-assets">171.1932</span> UA</div>
                 <div class="wallet-breakdown">
-                    <div>Швидкість: <b id="speed-display" style="color: var(--green-accent);">+0.0001/с</b></div>
+                    <div>Швидкість: <b id="speed-display" style="color: var(--green-accent);">+0.000000001/с</b></div>
                     <div>Пул: <b id="pool-assets">171.1932 UA</b></div>
                 </div>
             </div>
@@ -417,7 +417,7 @@
             <div class="placeholder-card" style="flex-direction: column; align-items: flex-start; gap: 10px;">
                 <div>
                     <h4 style="font-size: 16px; margin-bottom: 4px;">Квантовий прискорювач ⚡</h4>
-                    <p>Збільшує генерацію на +0.0001/с</p>
+                    <p>Збільшує генерацію на +0.0001/с (Курс: 0.01 TON = 5000 UA)</p>
                 </div>
                 <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; margin-top: 5px;">
                     <b style="color: var(--ton-blue);">Ціна: 0.01 TON</b>
@@ -438,15 +438,27 @@
             </div>
         </div>
 
-        <!-- VIEW 5: PROFILE -->
+        <!-- VIEW 5: PROFILE & WITHDRAW -->
         <div id="view-profile" class="view-content">
-            <div class="section-title">Профіль засновника</div>
+            <div class="section-title">Профіль та Вивід</div>
             
+            <!-- Картка виводу UA з комісією 10% -->
+            <div class="placeholder-card" style="flex-direction: column; align-items: flex-start; gap: 10px; width: 100%; margin-bottom: 15px; border-color: rgba(243, 186, 47, 0.3);">
+                <div>
+                    <h4 style="font-size: 15px; color: var(--gold-primary); margin-bottom: 3px;">📤 Вивід UA монет</h4>
+                    <p>Мінімум: 5000 UA | Комісія мережі: 10%</p>
+                </div>
+                <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                    <b style="font-size: 13px; color: var(--text-secondary);">Зняти на гаманець</b>
+                    <button class="action-chip" style="background: rgba(243, 186, 47, 0.15); color: var(--gold-primary); border-color: rgba(243, 186, 47, 0.3); padding: 8px 16px; font-size: 13px;" onclick="requestWithdrawal()">Вивести UA</button>
+                </div>
+            </div>
+
             <!-- Картка швидкої покупки за TON -->
             <div class="placeholder-card" style="flex-direction: column; align-items: flex-start; gap: 10px; width: 100%; margin-bottom: 15px; border-color: rgba(0, 152, 234, 0.3);">
                 <div>
                     <h4 style="font-size: 15px; color: var(--ton-blue); margin-bottom: 3px;">⚡ Купити прискорювач за TON</h4>
-                    <p>Додати +0.0001/с до швидкості майнінгу</p>
+                    <p>Додати +0.0001/с до швидкості (0.01 TON)</p>
                 </div>
                 <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
                     <b style="font-size: 14px; color: var(--ton-blue);">0.01 TON</b>
@@ -504,7 +516,6 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_OGR39bNiTJ4JPk5JjvEW5g_mqDZZwYj';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Введена ваша реальна адреса гаманця
         const ADMIN_TON_WALLET = 'UQDXq1iAqu88tVRG62_k03kAXELu_1gzRBMye-VZoFRIRtWw'; 
 
         let userId = 'user_leslav';
@@ -527,7 +538,7 @@
 
         let totalAssets = 171.1932;
         let pendingGreen = 0.0000; 
-        let miningSpeed = 0.0001;
+        let miningSpeed = 0.000000001;
 
         async function loadUserData() {
             const { data, error } = await supabaseClient
@@ -538,7 +549,7 @@
 
             if (data) {
                 totalAssets = parseFloat(data.balance);
-                if (data.speed) {
+                if (data.speed !== null && data.speed !== undefined) {
                     miningSpeed = parseFloat(data.speed);
                 }
                 updateUI();
@@ -569,7 +580,7 @@
         function updateUI() {
             document.getElementById('total-assets').innerText = totalAssets.toFixed(4);
             document.getElementById('pool-assets').innerText = totalAssets.toFixed(4) + ' UA';
-            document.getElementById('speed-display').innerText = '+' + miningSpeed.toFixed(4) + '/с';
+            document.getElementById('speed-display').innerText = '+' + miningSpeed.toFixed(9) + '/с';
         }
 
         async function buyBoosterWithTON() {
@@ -609,6 +620,37 @@
             } catch (e) {
                 console.error(e);
                 alert('Транзакцію скасовано або сталася помилка.');
+            }
+        }
+
+        // Логіка виводу UA з комісією 10% та мінімальним порогом
+        async function requestWithdrawal() {
+            if (!tonConnectUI.connected) {
+                alert('Підключіть TON гаманець для виводу!');
+                switchView('profile', document.querySelectorAll('.nav-item')[4]);
+                return;
+            }
+
+            const minWithdraw = 5000; // Поріг виводу
+            if (totalAssets < minWithdraw) {
+                alert(`Мінімальна сума для виводу — ${minWithdraw} UA. Ви маєте ${totalAssets.toFixed(2)} UA.`);
+                return;
+            }
+
+            const amountToWithdraw = totalAssets; // Виводимо весь баланс або можна зробити введення
+            const commission = amountToWithdraw * 0.10; // 10% комісія
+            const finalPayout = amountToWithdraw - commission;
+
+            if (confirm(`Запит на вивід: ${amountToWithdraw.toFixed(2)} UA\nКомісія системи (10%): ${commission..toFixed(2)} UA\nДо отримання на гаманець: ${finalPayout.toFixed(2)} UA\n\nПідтвердити вивід?`)) {
+                totalAssets = 0; // Списом баланс
+                updateUI();
+
+                await supabaseClient
+                    .from('users')
+                    .update({ balance: totalAssets })
+                    .eq('id', userId);
+
+                alert(`Запит успішно створено! ${finalPayout.toFixed(2)} UA буде надіслано на ваш гаманець з урахуванням комісії.`);
             }
         }
 
