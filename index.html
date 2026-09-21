@@ -623,7 +623,7 @@
             }
         }
 
-        // Логіка виводу UA з комісією 10% та мінімальним порогом
+        // Виправлена логіка виводу UA з комісією 10% та мінімальним порогом
         async function requestWithdrawal() {
             if (!tonConnectUI.connected) {
                 alert('Підключіть TON гаманець для виводу!');
@@ -637,12 +637,12 @@
                 return;
             }
 
-            const amountToWithdraw = totalAssets; // Виводимо весь баланс або можна зробити введення
+            const amountToWithdraw = totalAssets; 
             const commission = amountToWithdraw * 0.10; // 10% комісія
             const finalPayout = amountToWithdraw - commission;
 
-            if (confirm(`Запит на вивід: ${amountToWithdraw.toFixed(2)} UA\nКомісія системи (10%): ${commission..toFixed(2)} UA\nДо отримання на гаманець: ${finalPayout.toFixed(2)} UA\n\nПідтвердити вивід?`)) {
-                totalAssets = 0; // Списом баланс
+            if (confirm(`Запит на вивід: ${amountToWithdraw.toFixed(2)} UA\nКомісія системи (10%): ${commission.toFixed(2)} UA\nДо отримання на гаманець: ${finalPayout.toFixed(2)} UA\n\nПідтвердити вивід?`)) {
+                totalAssets = 0; 
                 updateUI();
 
                 await supabaseClient
