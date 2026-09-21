@@ -590,7 +590,7 @@
             });
         });
 
-        // Збереження даних з урахуванням назви колонки balanceNalance з вашої бази
+        // Збереження даних з виведенням помилки прямо на екран телефону
         async function saveUserDataToDatabase() {
             const nowTime = Math.floor(Date.now() / 1000);
             const payload = {
@@ -607,7 +607,8 @@
                 .upsert(payload, { onConflict: 'id' });
 
             if (error) {
-                console.error('Помилка збереження в базу даних:', error);
+                console.error('Помилка збереження:', error);
+                alert('Помилка бази даних: ' + JSON.stringify(error));
             }
         }
 
@@ -622,6 +623,11 @@
                 .select('balanceNalance, wallet, speed, last_active, withdrawn')
                 .eq('id', userId)
                 .single();
+
+            if (error && error.code !== 'PGRST116') {
+                console.error('Помилка завантаження:', error);
+                alert('Помилка завантаження з бази: ' + JSON.stringify(error));
+            }
 
             const nowTime = Math.floor(Date.now() / 1000);
 
@@ -664,7 +670,10 @@
                     insertData.invited_by = invitedBy;
                 }
 
-                await supabaseClient.from('users').insert([insertData]);
+                const { error: insertError } = await supabaseClient.from('users').insert([insertData]);
+                if (insertError) {
+                    alert('Помилка створення користувача: ' + JSON.stringify(insertError));
+                }
                 updateUI();
             }
         }
