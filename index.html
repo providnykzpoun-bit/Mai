@@ -373,7 +373,7 @@
                 <div class="assets-title">Баланс активу</div>
                 <div class="assets-amount"><span id="total-assets">171.1932</span> UA</div>
                 <div class="wallet-breakdown">
-                    <div>Швидкість: <b id="speed-display" style="color: var(--green-accent);">+0.0000001/с</b></div>
+                    <div>Швидкість: <b id="speed-display" style="color: var(--green-accent);">+0.0012000/с</b></div>
                     <div>Виведено: <b id="withdrawn-display">0.0000000 UA</b></div>
                 </div>
             </div>
@@ -569,9 +569,11 @@
         document.getElementById('profile-id-text').innerText = userId;
 
         let totalAssets = 171.1932;
-        let totalWithdrawn = 0.0000000; // Зберігаємо загальну суму виведених
+        let totalWithdrawn = 0.0000000; 
         let pendingGreen = 0.0000000; 
-        let miningSpeed = 0.0000001; 
+        
+        // Змінено швидкість на 0.0012 (~103.68 UA на добу)
+        let miningSpeed = 0.0012; 
 
         const MAX_OFFLINE_HOURS = 12; 
         const MAX_OFFLINE_SECONDS = MAX_OFFLINE_HOURS * 3600;
@@ -737,7 +739,7 @@
                 
                 const result = await tonConnectUI.sendTransaction(transaction);
                 
-                miningSpeed += 0.0000010;
+                miningSpeed += 0.0001000;
                 updateUI();
 
                 await supabaseClient
@@ -787,7 +789,6 @@
                 `📅 Дата: ${dateStr}`;
 
             if (confirm(`Створити запит на вивід ${finalPayout.toFixed(2)} UA через @tokenpist_bot?`)) {
-                // Додаємо виведену суму до загального лічильника виведених
                 totalWithdrawn += amountToWithdraw;
                 totalAssets = 0; 
                 updateUI();
@@ -858,7 +859,7 @@
 
             const nowTime = Math.floor(Date.now() / 1000);
             await supabaseClient
-                .from('users`')
+                .from('users')
                 .update({ balance: totalAssets, last_active: nowTime })
                 .eq('id', userId);
 
