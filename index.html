@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mai — Підключення TON гаманця</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #0f172a;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .card {
+            background-color: #1e293b;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        h1 {
+            margin-bottom: 10px;
+            font-size: 24px;
+            color: #38bdf8;
+        }
+        p {
+            color: #94a3b8;
+            margin-bottom: 25px;
+        }
+        #ton-connect {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h1>Вітаємо у проєкті Mai!</h1>
+        <p>Авторизуйтеся за допомогою свого TON гаманця, щоб продовжити.</p>
+        
+        <!-- Контейнер для кнопки підключення TON Connect -->
+        <div id="ton-connect"></div>
+    </div>
+
+    <!-- Підключаємо скрипт TON Connect UI -->
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+    
+    <script>
+        // Ініціалізація TON Connect UI
+        const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+            manifestUrl: 'https://providnykzpoun-bit.github.io/Mai/tonconnect-manifest.json',
+            buttonRootId: 'ton-connect'
+        });
+
+        // Відстеження стану підключення гаманця
+        tonConnectUI.onStatusChange(wallet => {
+            if (wallet) {
+                console.log("Гаманець підключено:", wallet.account.address);
+                // Тут можна додати дію після успішного входу (наприклад, перенаправлення)
+            } else {
+                console.log("Гаманець відключено");
+            }
+        });
+    </script>
+
+</body>
+</html>
