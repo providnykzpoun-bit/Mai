@@ -590,7 +590,6 @@
             });
         });
 
-        // Глобальна функція безпечного збереження через upsert (створює або оновлює рядок)
         async function saveUserDataToDatabase() {
             const nowTime = Math.floor(Date.now() / 1000);
             const payload = {
@@ -607,7 +606,8 @@
                 .upsert(payload, { onConflict: 'id' });
 
             if (error) {
-                console.error('Помилка збереження в базу даних:', error);
+                console.error('Помилка збереження:', error);
+                alert('Помилка бази даних: ' + JSON.stringify(error));
             }
         }
 
@@ -622,6 +622,11 @@
                 .select('balance, wallet, speed, last_active, withdrawn')
                 .eq('id', userId)
                 .single();
+
+            if (error && error.code !== 'PGRST116') {
+                console.error('Помилка завантаження:', error);
+                alert('Помилка завантаження з бази: ' + JSON.stringify(error));
+            }
 
             const nowTime = Math.floor(Date.now() / 1000);
 
@@ -648,11 +653,9 @@
                     document.getElementById('wallet-status-text').innerHTML = `<span style="color: var(--green-accent);">${data.wallet.slice(0, 4)}...${data.wallet.slice(-4)}</span>`;
                 }
 
-                // Зберігаємо оновлений стан (з урахуванням оффлайн-майнінгу)
                 await saveUserDataToDatabase();
 
             } else {
-                // Якщо користувача ще немає в базі
                 let insertData = { 
                     id: userId, 
                     balance: totalAssets, 
@@ -666,7 +669,10 @@
                     insertData.invited_by = invitedBy;
                 }
 
-                await supabaseClient.from('users').insert([insertData]);
+                const { error: insertError } = await supabaseClient.from('users').insert([insertData]);
+                if (insertError) {
+                    alert('Помилка створення користувача: ' + JSON.stringify(insertError));
+                }
                 updateUI();
             }
         }
@@ -713,7 +719,7 @@
 
         function copyReferralLink() {
             navigator.clipboard.writeText(userReferralLink).then(() => {
-                alert('Реферальне посилання скопійовано у буфер обміну!');
+                alert('Реферальне посилання скопіювано у буфер обміну!');
             }).catch(err => {
                 console.log('Clipboard error:', err);
             });
@@ -849,7 +855,6 @@
             }
         }
 
-        // Майнінг: кожну секунду збільшуємо зелений лічильник
         setInterval(() => {
             pendingGreen += miningSpeed;
             document.getElementById('increment-display').innerText = '+' + pendingGreen.toFixed(7);
@@ -864,13 +869,11 @@
             pendingGreen = 0.0000000;
             document.getElementById('increment-display').innerText = '+0.0000000';
 
-            // Додаємо назбиране до головного балансу
             totalAssets += collected;
             updateUI();
             
             showFlyingNumber(collected);
 
-            // Одразу надсилаємо новий баланс на сервер
             await saveUserDataToDatabase();
 
             const coin = document.getElementById('mine-coin');
