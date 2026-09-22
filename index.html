@@ -462,7 +462,7 @@
             <div class="placeholder-card" style="flex-direction: column; align-items: flex-start; gap: 12px;">
                 <div>
                     <h4 style="font-size: 16px; margin-bottom: 4px;">Ваше унікальне посилання</h4>
-                    <p id="ref-link-display" style="word-break: break-all; color: var(--gold-primary); font-size: 13px; margin-top: 6px;">https://t.me/Perchenya_bot</p>
+                    <p id="ref-link-display" style="word-break: break-all; color: var(--gold-primary); font-size: 13px; margin-top: 6px;">http://t.me/Perchenya_bot</p>
                 </div>
                 <button class="claim-btn" style="padding: 12px; font-size: 15px;" onclick="copyReferralLink()">Скопіювати посилання</button>
             </div>
@@ -548,7 +548,7 @@
 
         let userId = 'user_leslav';
         let userName = 'Михайло 🐝';
-        let userReferralLink = 'https://t.me/Perchenya_bot';
+        let userReferralLink = 'http://t.me/Perchenya_bot';
 
         if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
             const tgUser = tg.initDataUnsafe.user;
@@ -562,7 +562,7 @@
             }
         }
 
-        userReferralLink = `https://t.me/Perchenya_bot?start=${userId}`;
+        userReferralLink = `http://t.me/Perchenya_bot?start=${userId}`;
         document.getElementById('ref-link-display').innerText = userReferralLink;
 
         document.getElementById('user-name').innerText = userName;
@@ -611,15 +611,46 @@
             }
         }
 
+        // Функція для автоматичного нагородження того, хто запросив (реферера)
+        async function addBonusToReferrer(referrerId) {
+            try {
+                let { data: refUser, error } = await supabaseClient
+                    .from('users')
+                    .select('balance, speed')
+                    .eq('id', referrerId)
+                    .single();
+
+                if (refUser && !error) {
+                    let newSpeed = Number(refUser.speed || 0.0015) + 0.0002; // Підвищуємо швидкість майнінгу
+                    let newBalance = Number(refUser.balance || 0) + 100; // Бонус рефереру 100 UA
+
+                    await supabaseClient
+                        .from('users')
+                        .update({ 
+                            speed: newSpeed, 
+                            balance: newBalance 
+                        })
+                        .eq('id', referrerId);
+                }
+            } catch (err) {
+                console.error('Помилка нарахування бонуса рефереру:', err);
+            }
+        }
+
         async function loadUserData() {
             let invitedBy = null;
             if (tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
                 invitedBy = tg.initDataUnsafe.start_param;
+            } else {
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('start')) {
+                    invitedBy = urlParams.get('start');
+                }
             }
 
             const { data, error } = await supabaseClient
                 .from('users')
-                .select('balance, wallet, speed, last_active, withdrawn')
+                .select('balance, wallet, speed, last_active, withdrawn, referred_by')
                 .eq('id', userId)
                 .single();
 
@@ -656,22 +687,34 @@
                 await saveUserDataToDatabase();
 
             } else {
+                // НОВИЙ КОРИСТУВАЧ
+                let initialBalance = 0;
+                let assignedReferrer = null;
+
+                if (invitedBy && invitedBy !== userId) {
+                    assignedReferrer = invitedBy;
+                    initialBalance = 100; // Бонус новачкові 100 UA за перехід за рефсилкою
+                }
+
                 let insertData = { 
                     id: userId, 
-                    balance: totalAssets, 
+                    balance: initialBalance, 
                     speed: miningSpeed, 
                     name: userName,
                     last_active: nowTime,
-                    withdrawn: 0.0000000
+                    withdrawn: 0.0000000,
+                    referred_by: assignedReferrer
                 };
-
-                if (invitedBy && invitedBy !== userId) {
-                    insertData.invited_by = invitedBy;
-                }
 
                 const { error: insertError } = await supabaseClient.from('users').insert([insertData]);
                 if (insertError) {
                     alert('Помилка створення користувача: ' + JSON.stringify(insertError));
+                } else {
+                    totalAssets = initialBalance;
+                    if (assignedReferrer) {
+                        // Нараховуємо бонус 100 UA тому, хто запросив
+                        await addBonusToReferrer(assignedReferrer);
+                    }
                 }
                 updateUI();
             }
