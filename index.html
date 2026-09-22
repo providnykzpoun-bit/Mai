@@ -371,15 +371,15 @@
         <div id="view-mine" class="view-content active">
             <div class="assets-card" id="assets-card-box">
                 <div class="assets-title">Баланс активу</div>
-                <div class="assets-amount"><span id="total-assets">0.0000000</span> UA</div>
+                <div class="assets-amount"><span id="total-assets">0.00</span> UA</div>
                 <div class="wallet-breakdown">
-                    <div>Швидкість: <b id="speed-display" style="color: var(--green-accent);">+0.0015000/с</b></div>
-                    <div>Виведено: <b id="withdrawn-display">0.0000000 UA</b></div>
+                    <div>Швидкість: <b id="speed-display" style="color: var(--green-accent);">+0.0015/с</b></div>
+                    <div>Виведено: <b id="withdrawn-display">0.00 UA</b></div>
                 </div>
             </div>
 
             <div class="mining-display">
-                <div class="increment-value" id="increment-display">+0.0000000</div>
+                <div class="increment-value" id="increment-display">+0.00</div>
             </div>
 
             <div class="coin-container" id="coin-parent">
@@ -568,9 +568,9 @@
         document.getElementById('user-name').innerText = userName;
         document.getElementById('profile-id-text').innerText = userId;
 
-        let totalAssets = 171.1932;
-        let totalWithdrawn = 0.0000000; 
-        let pendingGreen = 0.0000000; 
+        let totalAssets = 171.19;
+        let totalWithdrawn = 0.00; 
+        let pendingGreen = 0.00; 
         let miningSpeed = 0.0015; 
 
         const MAX_OFFLINE_HOURS = 12; 
@@ -607,7 +607,6 @@
 
             if (error) {
                 console.error('Помилка збереження:', error);
-                alert('Помилка бази даних: ' + JSON.stringify(error));
             }
         }
 
@@ -621,7 +620,7 @@
                     .single();
 
                 if (refUser && !error) {
-                    let newSpeed = Number(refUser.speed || 0.0015) + 0.0002; // Підвищуємо швидкість майнінгу
+                    let newSpeed = Number(refUser.speed || 0.0015) + 0.0002; 
                     let newBalance = Number(refUser.balance || 0) + 100; // Бонус рефереру 100 UA
 
                     await supabaseClient
@@ -656,7 +655,6 @@
 
             if (error && error.code !== 'PGRST116') {
                 console.error('Помилка завантаження:', error);
-                alert('Помилка завантаження з бази: ' + JSON.stringify(error));
             }
 
             const nowTime = Math.floor(Date.now() / 1000);
@@ -693,7 +691,7 @@
 
                 if (invitedBy && invitedBy !== userId) {
                     assignedReferrer = invitedBy;
-                    initialBalance = 100; // Бонус новачкові 100 UA за перехід за рефсилкою
+                    initialBalance = 100; // Бонус новачкові 100 UA за рефсилку
                 }
 
                 let insertData = { 
@@ -702,17 +700,14 @@
                     speed: miningSpeed, 
                     name: userName,
                     last_active: nowTime,
-                    withdrawn: 0.0000000,
+                    withdrawn: 0.00,
                     referred_by: assignedReferrer
                 };
 
                 const { error: insertError } = await supabaseClient.from('users').insert([insertData]);
-                if (insertError) {
-                    alert('Помилка створення користувача: ' + JSON.stringify(insertError));
-                } else {
+                if (!insertError) {
                     totalAssets = initialBalance;
                     if (assignedReferrer) {
-                        // Нараховуємо бонус 100 UA тому, хто запросив
                         await addBonusToReferrer(assignedReferrer);
                     }
                 }
@@ -783,9 +778,9 @@
         });
 
         function updateUI() {
-            document.getElementById('total-assets').innerText = totalAssets.toFixed(7);
-            document.getElementById('withdrawn-display').innerText = totalWithdrawn.toFixed(7) + ' UA';
-            document.getElementById('speed-display').innerText = '+' + miningSpeed.toFixed(7) + '/с';
+            document.getElementById('total-assets').innerText = totalAssets.toFixed(2);
+            document.getElementById('withdrawn-display').innerText = totalWithdrawn.toFixed(2) + ' UA';
+            document.getElementById('speed-display').innerText = '+' + miningSpeed.toFixed(4) + '/с';
         }
 
         async function buyBoosterWithTON() {
@@ -809,10 +804,9 @@
 
             try {
                 alert('Підтвердіть транзакцію на 0.01 TON у вашому гаманці...');
+                await tonConnectUI.sendTransaction(transaction);
                 
-                const result = await tonConnectUI.sendTransaction(transaction);
-                
-                miningSpeed += 0.0001000;
+                miningSpeed += 0.0001;
                 updateUI();
 
                 await saveUserDataToDatabase();
@@ -850,9 +844,9 @@
             const messageText = 
                 `📤 Запит на вивід UA Token\n` +
                 `👤 Нік: ${userName} (${userId})\n` +
-                `💰 Сума: ${amountToWithdraw.toFixed(7)} UA\n` +
-                `📉 Комісія (10%): ${commission.toFixed(7)} UA\n` +
-                `✅ До отримання: ${finalPayout.toFixed(7)} UA\n` +
+                `💰 Сума: ${amountToWithdraw.toFixed(2)} UA\n` +
+                `📉 Комісія (10%): ${commission.toFixed(2)} UA\n` +
+                `✅ До отримання: ${finalPayout.toFixed(2)} UA\n` +
                 `💳 Гаманець: ${userWalletAddress}\n` +
                 `🤖 Бот: UA Mining (Perchenya_bot)\n` +
                 `📅 Дата: ${dateStr}`;
@@ -900,7 +894,7 @@
 
         setInterval(() => {
             pendingGreen += miningSpeed;
-            document.getElementById('increment-display').innerText = '+' + pendingGreen.toFixed(7);
+            document.getElementById('increment-display').innerText = '+' + pendingGreen.toFixed(2);
         }, 1000);
 
         async function claimCoins() {
@@ -909,14 +903,15 @@
             if (pendingGreen <= 0) return;
 
             let collected = pendingGreen;
-            pendingGreen = 0.0000000;
-            document.getElementById('increment-display').innerText = '+0.0000000';
+            pendingGreen = 0.00;
+            document.getElementById('increment-display').innerText = '+0.00';
 
             totalAssets += collected;
             updateUI();
             
             showFlyingNumber(collected);
 
+            // МИТТЄВО ЗБЕРІГАЄМО В БАЗУ ПРИ КЛІКУ НА CLAIM
             await saveUserDataToDatabase();
 
             const coin = document.getElementById('mine-coin');
@@ -931,7 +926,7 @@
         
             const flyer = document.createElement('div');
             flyer.className = 'floating-number';
-            flyer.innerText = '+' + amount.toFixed(7);
+            flyer.innerText = '+' + amount.toFixed(2);
             
             container.appendChild(flyer);
             setTimeout(() => {
