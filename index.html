@@ -610,7 +610,6 @@
             }
         }
 
-        // Функція для автоматичного нагородження того, хто запросив (реферера)
         async function addBonusToReferrer(referrerId) {
             try {
                 let { data: refUser, error } = await supabaseClient
@@ -621,7 +620,7 @@
 
                 if (refUser && !error) {
                     let newSpeed = Number(refUser.speed || 0.0015) + 0.0002; 
-                    let newBalance = Number(refUser.balance || 0) + 100; // Бонус рефереру 100 UA
+                    let newBalance = Number(refUser.balance || 0) + 100; 
 
                     await supabaseClient
                         .from('users')
@@ -685,13 +684,12 @@
                 await saveUserDataToDatabase();
 
             } else {
-                // НОВИЙ КОРИСТУВАЧ
                 let initialBalance = 0;
                 let assignedReferrer = null;
 
                 if (invitedBy && invitedBy !== userId) {
                     assignedReferrer = invitedBy;
-                    initialBalance = 100; // Бонус новачкові 100 UA за рефсилку
+                    initialBalance = 100; 
                 }
 
                 let insertData = { 
@@ -783,6 +781,7 @@
             document.getElementById('speed-display').innerText = '+' + miningSpeed.toFixed(4) + '/с';
         }
 
+        // ОНОВЛЕНА ФУНКЦІЯ КУПІВЛІ З ТОЧНИМ ЗЧИТУВАННЯМ ШВИДКОСТІ З БАЗИ
         async function buyBoosterWithTON() {
             if (!tonConnectUI.connected) {
                 alert('Будь ласка, спочатку підключіть ваш TON гаманець у профілі!');
@@ -806,10 +805,19 @@
                 alert('Підтвердіть транзакцію на 0.01 TON у вашому гаманці...');
                 await tonConnectUI.sendTransaction(transaction);
                 
-                miningSpeed += 0.0001;
-                updateUI();
+                // Зчитуємо актуальну швидкість з бази на випадок змін, додаємо буст (+0.0001)
+                const { data: currentUser } = await supabaseClient
+                    .from('users')
+                    .select('speed')
+                    .eq('id', userId)
+                    .single();
 
+                let currentDbSpeed = currentUser ? parseFloat(currentUser.speed || 0.0015) : miningSpeed;
+                miningSpeed = currentDbSpeed + 0.0001;
+
+                updateUI();
                 await saveUserDataToDatabase();
+                
                 alert('Успіх! Транзакцію прийнято, швидкість майнінгу збільшено 🚀');
 
             } catch (e) {
@@ -910,8 +918,6 @@
             updateUI();
             
             showFlyingNumber(collected);
-
-            // МИТТЄВО ЗБЕРІГАЄМО В БАЗУ ПРИ КЛІКУ НА CLAIM
             await saveUserDataToDatabase();
 
             const coin = document.getElementById('mine-coin');
