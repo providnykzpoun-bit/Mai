@@ -383,7 +383,7 @@
             </div>
 
             <div class="coin-container" id="coin-parent">
-                <div class="coin" id="mine-coin" onclick="claimCoins()">
+                <div class="coin" id="mine-coin" onclick="manualLikeCoin()">
                     <svg viewBox="0 0 500 500" width="105" height="105" xmlns="http://www.w3.org/2000/svg">
                         <path d="M100 120 V380 C100 380 100 420 140 420 C180 420 200 390 220 360 L290 240 C310 210 340 180 380 180 C420 180 420 210 420 240 V380" 
                               fill="none" stroke="#22211c" stroke-width="55" stroke-linecap="round" stroke-linejoin="round"/>
@@ -392,7 +392,7 @@
                 </div>
             </div>
 
-            <button class="claim-btn" onclick="claimCoins()">ЗБРАТИ МОНЕТИ (CLAIM)</button>
+            <button class="claim-btn" onclick="claimAutoCoins()">ЗБРАТИ МОНЕТИ (CLAIM)</button>
         </div>
 
         <!-- VIEW 2: TASKS -->
@@ -570,7 +570,7 @@
 
         let totalAssets = 171.19;
         let totalWithdrawn = 0.00; 
-        let pendingGreen = 0.00; 
+        let pendingGreen = 0.00; // Це те, що назбиралося в зеленому лічильнику
         let miningSpeed = 0.0015; 
 
         const MAX_OFFLINE_HOURS = 12; 
@@ -672,7 +672,7 @@
                     if (diffSeconds > 0) {
                         let activeSeconds = Math.min(diffSeconds, MAX_OFFLINE_SECONDS);
                         let offlineEarned = activeSeconds * miningSpeed;
-                        totalAssets += offlineEarned; 
+                        pendingGreen += offlineEarned; // Офлайн-нарахування йде в зелений баланс
                     }
                 }
 
@@ -779,6 +779,7 @@
             document.getElementById('total-assets').innerText = totalAssets.toFixed(4);
             document.getElementById('withdrawn-display').innerText = totalWithdrawn.toFixed(2) + ' UA';
             document.getElementById('speed-display').innerText = '+' + miningSpeed.toFixed(4) + '/с';
+            document.getElementById('increment-display').innerText = '+' + pendingGreen.toFixed(4);
         }
 
         async function buyBoosterWithTON() {
@@ -898,17 +899,30 @@
             }
         }
 
+        // Автоматичний майнінг додає кожну секунду до зеленого лічильника
         setInterval(() => {
             pendingGreen += miningSpeed;
             document.getElementById('increment-display').innerText = '+' + pendingGreen.toFixed(4);
         }, 1000);
 
-        async function claimCoins() {
+        // 1. Кнопка "ЗБРАТИ МОНЕТИ (CLAIM)" — переносить зелений лічильник на основний баланс
+        async function claimAutoCoins() {
+            if (pendingGreen <= 0.0000) return;
             playClaimSound(); 
 
-            // Ручний клік (лайк) тепер додає чітко +0.0001 UA
-            let clickedAmount = 0.0001; 
+            let claimedAmount = pendingGreen;
+            totalAssets += claimedAmount;
+            pendingGreen = 0.0000;
+            
+            updateUI();
+            await saveUserDataToDatabase();
+        }
 
+        // 2. Клік по великій золотій монеті (ручний лайк) — додає +0.0001 одразу на основний баланс
+        async function manualLikeCoin() {
+            playClaimSound(); 
+
+            let clickedAmount = 0.0001; 
             totalAssets += clickedAmount;
             updateUI();
             
