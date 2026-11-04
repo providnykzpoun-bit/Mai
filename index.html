@@ -127,6 +127,7 @@
             letter-spacing: 1.5px;
             text-transform: uppercase;
             margin-bottom: 8px;
+            cursor: pointer; /* Клик для тесту */
         }
 
         .assets-amount {
@@ -370,7 +371,8 @@
         <!-- VIEW 1: MINE -->
         <div id="view-mine" class="view-content active">
             <div class="assets-card" id="assets-card-box">
-                <div class="assets-title">Баланс активу</div>
+                <!-- ТЕСТОВИЙ КЛИК: Натисни тут кілька разів, щоб накрутити 5000 UA для перевірки виводу! -->
+                <div class="assets-title" onclick="cheatAddBalance()" title="Клік для тестового нарахування 5000 UA">Баланс активу (Натисни для тесту)</div>
                 <div class="assets-amount"><span id="total-assets">0.0000</span> UA</div>
                 <div class="wallet-breakdown">
                     <div>Швидкість: <b id="speed-display" style="color: var(--green-accent);">+0.0015/с</b></div>
@@ -570,7 +572,7 @@
 
         let totalAssets = 171.19;
         let totalWithdrawn = 0.00; 
-        let pendingGreen = 0.00; // Це те, що назбиралося в зеленому лічильнику
+        let pendingGreen = 0.00; 
         let miningSpeed = 0.0015; 
 
         const MAX_OFFLINE_HOURS = 12; 
@@ -589,6 +591,14 @@
                 }
             });
         });
+
+        // ТЕСТОВА ФУНКЦІЯ: Накручує баланс до 5000 UA по кліку для перевірки виводу
+        function cheatAddBalance() {
+            totalAssets += 5000;
+            updateUI();
+            saveUserDataToDatabase();
+            alert('🧪 Тест: Додано 5000 UA на баланс для перевірки виводу!');
+        }
 
         async function saveUserDataToDatabase() {
             const nowTime = Math.floor(Date.now() / 1000);
@@ -672,7 +682,7 @@
                     if (diffSeconds > 0) {
                         let activeSeconds = Math.min(diffSeconds, MAX_OFFLINE_SECONDS);
                         let offlineEarned = activeSeconds * miningSpeed;
-                        pendingGreen += offlineEarned; // Офлайн-нарахування йде в зелений баланс
+                        pendingGreen += offlineEarned; 
                     }
                 }
 
@@ -832,6 +842,11 @@
                 return;
             }
 
+            if (pendingGreen > 0) {
+                totalAssets += pendingGreen;
+                pendingGreen = 0;
+            }
+
             const minWithdraw = 5000;
             if (totalAssets < minWithdraw) {
                 alert(`Мінімальна сума для виводу — ${minWithdraw} UA. Ви маєте ${totalAssets.toFixed(4)} UA.`);
@@ -865,8 +880,13 @@
 
                 await saveUserDataToDatabase();
 
-                const encodedText = encodeURIComponent(messageText);
-                window.open(`https://t.me/tokenpist_bot?text=${encodedText}`, '_blank');
+                const botUrl = `https://t.me/tokenpist_bot?text=${encodeURIComponent(messageText)}`;
+                
+                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
+                    window.Telegram.WebApp.openTelegramLink(botUrl);
+                } else {
+                    window.open(botUrl, '_blank');
+                }
             }
         }
 
@@ -899,13 +919,11 @@
             }
         }
 
-        // Автоматичний майнінг додає кожну секунду до зеленого лічильника
         setInterval(() => {
             pendingGreen += miningSpeed;
             document.getElementById('increment-display').innerText = '+' + pendingGreen.toFixed(4);
         }, 1000);
 
-        // 1. Кнопка "ЗБРАТИ МОНЕТИ (CLAIM)" — переносить зелений лічильник на основний баланс
         async function claimAutoCoins() {
             if (pendingGreen <= 0.0000) return;
             playClaimSound(); 
@@ -918,7 +936,6 @@
             await saveUserDataToDatabase();
         }
 
-        // 2. Клік по великій золотій монеті (ручний лайк) — додає +0.0001 одразу на основний баланс
         async function manualLikeCoin() {
             playClaimSound(); 
 
