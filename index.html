@@ -378,6 +378,11 @@
                 </div>
             </div>
 
+            <!-- Кнопка швидкого тесту, щоб одразу накинути баланс для перевірки виводу -->
+            <button onclick="testAddBalance()" style="width: 100%; background: rgba(0,255,136,0.15); color: var(--green-accent); border: 1px dashed var(--green-accent); padding: 8px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; margin-bottom: 12px;">
+                ⚡ [ТЕСТ] Додати 10 UA для перевірки виводу
+            </button>
+
             <div class="mining-display">
                 <div class="increment-value" id="increment-display">+0.0000</div>
             </div>
@@ -590,6 +595,14 @@
             });
         });
 
+        // Тестова кнопка для швидкого накидання балансу
+        function testAddBalance() {
+            totalAssets += 10.0;
+            updateUI();
+            saveUserDataToDatabase();
+            alert('Додано 10 UA для тесту виводу!');
+        }
+
         async function saveUserDataToDatabase() {
             const nowTime = Math.floor(Date.now() / 1000);
             const payload = {
@@ -659,7 +672,10 @@
             const nowTime = Math.floor(Date.now() / 1000);
 
             if (data) {
-                totalAssets = parseFloat(data.balance || 0);
+                // Завантажуємо баланс із бази, але якщо там 0 або null, залишаємо попереднє значення або локальне
+                if (data.balance !== null && data.balance !== undefined) {
+                    totalAssets = parseFloat(data.balance);
+                }
                 if (data.speed !== null && data.speed !== undefined && data.speed > 0) {
                     miningSpeed = parseFloat(data.speed);
                 }
@@ -737,3 +753,233 @@
             }
 
             totalAssets += rewardAmount;
+            updateUI();
+
+            localStorage.setItem(taskKey, 'true');
+
+            const btn = document.getElementById('task-' + taskId + '-btn');
+            if (btn) {
+                btn.innerText = 'Виконано ✓';
+                btn.style.background = 'rgba(0, 255, 136, 0.15)';
+                btn.style.color = 'var(--green-accent)';
+                btn.style.borderColor = 'rgba(0, 255, 136, 0.4)';
+            }
+
+            await saveUserDataToDatabase();
+            alert(`Вітаємо! Ви отримали +${rewardAmount} UA`);
+        }
+
+        function copyReferralLink() {
+            navigator.clipboard.writeText(userReferralLink).then(() => {
+                alert('Реферальне посилання скопіювано у буфер обміну!');
+            }).catch(err => {
+                console.log('Clipboard error:', err);
+            });
+        }
+
+        tonConnectUI.onStatusChange(async wallet => {
+            if (wallet) {
+                const userWallet = wallet.account.address; 
+                document.getElementById('wallet-status-text').innerHTML = `<span style="color: var(--green-accent);">${userWallet.slice(0, 4)}...${userWallet.slice(-4)}</span>`;
+                
+                await supabaseClient
+                    .from('users')
+                    .update({ wallet: userWallet })
+                    .eq('id', userId);
+            } else {
+                document.getElementById('wallet-status-text').innerHTML = `<span style="color: var(--text-secondary);">Не підключено</span>`;
+            }
+        });
+
+        function updateUI() {
+            document.getElementById('total-assets').innerText = totalAssets.toFixed(4);
+            document.getElementById('withdrawn-display').innerText = totalWithdrawn.toFixed(2) + ' UA';
+            document.getElementById('speed-display').innerText = '+' + miningSpeed.toFixed(4) + '/с';
+            document.getElementById('increment-display').innerText = '+' + pendingGreen.toFixed(4);
+        }
+
+        async function buyBoosterWithTON() {
+            if (!tonConnectUI.connected) {
+                alert('Будь ласка, спочатку підключіть ваш TON гаманець у профілі!');
+                switchView('profile', document.querySelectorAll('.nav-item')[4]);
+                return;
+            }
+
+            const nanoTonAmount = '10000000'; // 0.01 TON
+
+            const transaction = {
+                validUntil: Math.floor(Date.now() / 1000) + 360,
+                messages: [
+                    {
+                        address: ADMIN_TON_WALLET,
+                        amount: nanoTonAmount
+                    }
+                ]
+            };
+
+            try {
+                alert('Підтвердіть транзакцію на 0.01 TON у вашому гаманці...');
+                await tonConnectUI.sendTransaction(transaction);
+                
+                const { data: currentUser } = await supabaseClient
+                    .from('users')
+                    .select('speed')
+                    .eq('id', userId)
+                    .single();
+
+                let currentDbSpeed = currentUser ? parseFloat(currentUser.speed || 0.0015) : miningSpeed;
+                miningSpeed = currentDbSpeed + 0.0001;
+
+                updateUI();
+                await saveUserDataToDatabase();
+                
+                alert('Успіх! Транзакцію прийнято, швидкість майнінгу збільшено 🚀');
+
+            } catch (e) {
+                console.error(e);
+                alert('Транзакцію скасовано або сталася помилка.');
+            }
+        }
+
+        async function requestWithdrawal() {
+            if (!tonConnectUI.connected) {
+                alert('Підключіть TON гаманець для виводу!');
+                switchView('profile', document.querySelectorAll('.nav-item')[4]);
+                return;
+            }
+
+            if (pendingGreen > 0) {
+                totalAssets += pendingGreen;
+                pendingGreen = 0;
+            }
+
+            // МІНІМАЛЬНИЙ ВИВІД 0.01 UA ДЛЯ ТЕСТУ
+            const minWithdraw = 0.01;
+            if (totalAssets < minWithdraw) {
+                alert(`Мінімальна сума для виводу — ${minWithdraw} UA. Ви маєте ${totalAssets.toFixed(4)} UA.`);
+                return;
+            }
+
+            const amountToWithdraw = totalAssets; 
+            const commission = amountToWithdraw * 0.10;
+            const finalPayout = amountToWithdraw - commission;
+
+            const walletInfo = tonConnectUI.wallet;
+            const userWalletAddress = walletInfo ? walletInfo.account.address : 'Не вказано';
+
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('uk-UA') + ' ' + now.toLocaleTimeString('uk-UA');
+
+            const messageText = 
+                `📤 Запит на вивід UA Token\n` +
+                `👤 Нік: ${userName} (${userId})\n` +
+                `💰 Сума: ${amountToWithdraw.toFixed(4)} UA\n` +
+                `📉 Комісія (10%): ${commission.toFixed(4)} UA\n` +
+                `✅ До отримання: ${finalPayout.toFixed(4)} UA\n` +
+                `💳 Гаманець: ${userWalletAddress}\n` +
+                `🤖 Бот: UA Mining (Perchenya_bot)\n` +
+                `📅 Дата: ${dateStr}`;
+
+            if (confirm(`Створити запит на вивід ${finalPayout.toFixed(4)} UA через @tokenpist_bot?`)) {
+                totalWithdrawn += amountToWithdraw;
+                totalAssets = 0; 
+                updateUI();
+
+                await saveUserDataToDatabase();
+
+                const botUrl = `https://t.me/tokenpist_bot?text=${encodeURIComponent(messageText)}`;
+                
+                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
+                    window.Telegram.WebApp.openTelegramLink(botUrl);
+                } else {
+                    window.open(botUrl, '_blank');
+                }
+            }
+        }
+
+        let audioCtx = null;
+        function playClaimSound() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); 
+                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15); 
+                
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.2);
+            } catch (err) {
+                console.log('Audio error:', err);
+            }
+        }
+
+        setInterval(() => {
+            pendingGreen += miningSpeed;
+            document.getElementById('increment-display').innerText = '+' + pendingGreen.toFixed(4);
+        }, 1000);
+
+        async function claimAutoCoins() {
+            if (pendingGreen <= 0.0000) return;
+            playClaimSound(); 
+
+            let claimedAmount = pendingGreen;
+            totalAssets += claimedAmount;
+            pendingGreen = 0.0000;
+            
+            updateUI();
+            await saveUserDataToDatabase();
+        }
+
+        async function manualLikeCoin() {
+            playClaimSound(); 
+
+            let clickedAmount = 0.0001; 
+            totalAssets += clickedAmount;
+            updateUI();
+            
+            showFlyingNumber(clickedAmount);
+            await saveUserDataToDatabase();
+
+            const coin = document.getElementById('mine-coin');
+            coin.style.transform = 'scale(0.88)';
+            setTimeout(() => {
+                coin.style.transform = 'scale(1)';
+            }, 100);
+        }
+
+        function showFlyingNumber(amount) {
+            const container = document.getElementById('coin-parent');
+        
+            const flyer = document.createElement('div');
+            flyer.className = 'floating-number';
+            flyer.innerText = '+' + amount.toFixed(4);
+            
+            container.appendChild(flyer);
+            setTimeout(() => {
+                flyer.remove();
+            }, 750);
+        }
+
+        function switchView(viewId, element) {
+            document.querySelectorAll('.view-content').forEach(el => el.classList.remove('active'));
+            document.getElementById('view-' + viewId).classList.add('active');
+
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+        }
+    </script>
+</body>
+</html>
